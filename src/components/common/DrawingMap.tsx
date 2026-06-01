@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 import { TerraDraw } from 'terra-draw';
 import { TerraDrawLeafletAdapter } from 'terra-draw-leaflet-adapter';
 import { TerraDrawPolygonMode } from 'terra-draw';
@@ -16,10 +15,15 @@ const DrawingMap = ({ onPolygonChange }: DrawingMapProps) => {
   useEffect(() => {
     if (!mapRef.current) return;
 
-    const map = L.map(mapRef.current).setView([-34.6, -58.4], 13);
+    // Centro de la provincia de Córdoba (Argentina)
+   // const map = L.map(mapRef.current).setView([-31.4201, -64.1888], 12);
+//const map = L.map(mapRef.current).setView([-32.4075, -63.2408], 12);
+const map = L.map(mapRef.current).setView([-32.1591, -63.4667], 13);
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+    // Capa de mapa base (OpenStreetMap, se ve como imagen real)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+      maxZoom: 19,
     }).addTo(map);
 
     const draw = new TerraDraw({
@@ -28,14 +32,13 @@ const DrawingMap = ({ onPolygonChange }: DrawingMapProps) => {
         map: map,
         coordinatePrecision: 9,
       }),
-      modes: [new TerraDrawPolygonMode()],  // ✅ solo un modo para empezar
+      modes: [new TerraDrawPolygonMode()],
     });
 
     draw.start();
     draw.setMode('polygon');
     drawRef.current = draw;
 
-    // ✅ Usar on('change') en lugar de setOnChange
     draw.on('change', () => {
       const snapshot = draw.getSnapshot();
       const polygons = snapshot.filter((f: any) => f.geometry.type === 'Polygon');
@@ -56,9 +59,10 @@ const DrawingMap = ({ onPolygonChange }: DrawingMapProps) => {
     };
   }, [onPolygonChange]);
 
-  return <div ref={mapRef} style={{ width: '100%', height: '400px' }} />;
+  return <div ref={mapRef} style={{ width: '100%', height: '450px', borderRadius: '8px', border: '1px solid #ccc' }} />;
 };
 
+// Cálculo de área usando fórmula de Shoelace (rápida, aproximada)
 function calculateArea(polygon: any): number {
   const coords = polygon.coordinates[0];
   let area = 0;
@@ -68,7 +72,7 @@ function calculateArea(polygon: any): number {
     area += x1 * y2 - x2 * y1;
   }
   area = Math.abs(area) / 2;
-  return area;
+  return area; // metros cuadrados aproximados
 }
 
 export default DrawingMap;
