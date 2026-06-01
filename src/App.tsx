@@ -7,6 +7,7 @@ import LotesPage from './pages/LotesPage';
 import LaboresPage from './pages/LaboresPage';
 import CortesPage from './pages/CortesPage';
 import AlertasPage from './pages/AlertasPage';
+import TestLogin from './pages/TestLogin';  // ← IMPORTAR
 import Layout from './components/layout/Layout';
 
 // Componente para rutas protegidas
@@ -21,6 +22,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/test" element={<TestLogin />} />  {/* ← NUEVA RUTA */}
           
           <Route path="/" element={
             <ProtectedRoute>
