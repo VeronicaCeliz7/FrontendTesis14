@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import * as turf from '@turf/turf';
-import { useAuth } from '../hooks/useAuth';
-import { listarLotes, crearLote, eliminarLote } from '../services/lotes.service';
+import { listarLotesPorCampo, crearLote, eliminarLote } from '../services/lotes.service';
 import { listarCampos, crearCampo, Campo } from '../services/campos.service';
+import GraficoNDVI from '../components/common/GraficoNDVI'; // ✅ NUEVO
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -23,7 +23,7 @@ const LotesPage = () => {
   const [lotes, setLotes] = useState<any[]>([]);
   const [campos, setCampos] = useState<Campo[]>([]);
   const [campoSeleccionado, setCampoSeleccionado] = useState<Campo | null>(null);
-  const { token } = useAuth();
+  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState<number | null>(null); // ✅ NUEVO
 
   const [modoDibujo, setModoDibujo] = useState(false);
   const [puntos, setPuntos] = useState<any[]>([]);
@@ -36,13 +36,69 @@ const LotesPage = () => {
   const lotesLayerRef = useRef<any>(null);
   const modoDibujoRef = useRef(false);
 
-  // ✅ Eliminar lote - CORREGIDO
+  const dibujarLotesGuardados = (lotesADibujar: any[]) => {
+    console.log('🗺️ dibujarLotesGuardados llamado con', lotesADibujar.length, 'lotes:', lotesADibujar.map(l => `${l.nombre}(campo:${l.campo_id})`));
+    if (!mapInstanceRef.current) {
+      console.log('❌ mapInstanceRef.current es null, abortando dibujo');
+      return;
+    }
+
+    if (lotesLayerRef.current) {
+      console.log('🧹 Limpiando capa vieja');
+      lotesLayerRef.current.clearLayers();
+      lotesLayerRef.current.remove();
+      lotesLayerRef.current = null;
+    }
+
+    lotesLayerRef.current = L.layerGroup().addTo(mapInstanceRef.current);
+    console.log('✅ Capa nueva creada');
+
+    lotesADibujar.forEach((lote) => {
+      console.log('📌 Dibujando lote:', lote.nombre, 'campo_id:', lote.campo_id);
+      if (lote.poligono_geojson?.coordinates) {
+        const coords = lote.poligono_geojson.coordinates[0].map((p: number[]) => [p[1], p[0]]);
+        L.polygon(coords as any, {
+          color: '#3b82f6',
+          weight: 3,
+          fillColor: '#3b82f6',
+          fillOpacity: 0.2,
+        }).bindPopup(`<b>🌾 ${lote.nombre}</b><br/>📐 ${formatearArea(lote.hectareas)} ha`)
+          .addTo(lotesLayerRef.current);
+      } else {
+        console.log('⚠️ Lote sin coordenadas:', lote.nombre);
+      }
+    });
+  };
+
+  const cargarLotesDelCampo = async (campo: Campo | null) => {
+    console.log('🟢 cargarLotesDelCampo llamado para campo:', campo?.id, campo?.nombre);
+    if (!campo) {
+      setLotes([]);
+      dibujarLotesGuardados([]);
+      setLoteSeleccionadoId(null); // ✅ Limpiar selección
+      return;
+    }
+    try {
+      const data = await listarLotesPorCampo(campo.id);
+      console.log('✅ Lotes recibidos:', data.length, data.map((l: any) => `${l.nombre}(campo:${l.campo_id})`));
+      setLotes(data);
+      dibujarLotesGuardados(data);
+      if (data.length > 0) {
+        setLoteSeleccionadoId(data[0].id); // ✅ Seleccionar el primero automáticamente
+      }
+    } catch (error) {
+      console.error('Error cargando lotes:', error);
+      setLotes([]);
+      dibujarLotesGuardados([]);
+      setLoteSeleccionadoId(null);
+    }
+  };
+
   const handleEliminarLote = async (loteId: number, loteNombre: string) => {
     if (confirm(`¿Eliminar el lote "${loteNombre}"?`)) {
       try {
-        await eliminarLote(loteId, campoSeleccionado!.id, token!);
-        await cargarLotes();
-        setTimeout(() => dibujarLotesGuardados(), 100);
+        await eliminarLote(loteId, campoSeleccionado!.id);
+        await cargarLotesDelCampo(campoSeleccionado);
         alert(`✅ Lote "${loteNombre}" eliminado`);
       } catch (error) {
         console.error('Error:', error);
@@ -51,22 +107,19 @@ const LotesPage = () => {
     }
   };
 
-  // Crear nuevo campo
   const crearNuevoCampo = async () => {
     const nombre = window.prompt('📌 Nombre del nuevo campo:', 'Mi Campo');
     if (!nombre || !nombre.trim()) {
       alert('El nombre es obligatorio');
       return;
     }
-    
     try {
-      const nuevoCampo = await crearCampo(token!, {
+      const nuevoCampo = await crearCampo({
         nombre: nombre.trim(),
         ubicacion: '',
         latitud_centro: -32.1612,
         longitud_centro: -63.4616
       });
-      
       setCampos(prev => [...prev, nuevoCampo]);
       setCampoSeleccionado(nuevoCampo);
       alert(`✅ Campo "${nombre}" creado correctamente`);
@@ -78,45 +131,14 @@ const LotesPage = () => {
 
   const cargarCampos = async () => {
     try {
-      const data = await listarCampos(token!);
+      const data = await listarCampos();
       setCampos(data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const cargarLotes = async () => {
-    if (!campoSeleccionado) return;
-    try {
-      const data = await listarLotes(token!);
-      const filtrados = data.filter((l: any) => l.campo_id === campoSeleccionado.id);
-      setLotes(filtrados);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const dibujarLotesGuardados = () => {
-    if (!mapInstanceRef.current) return;
-
-    if (lotesLayerRef.current) {
-      lotesLayerRef.current.clearLayers();
-    } else {
-      lotesLayerRef.current = L.layerGroup().addTo(mapInstanceRef.current);
-    }
-
-    lotes.forEach((lote) => {
-      if (lote.poligono_geojson?.coordinates) {
-        const coords = lote.poligono_geojson.coordinates[0].map((p: number[]) => [p[1], p[0]]);
-        L.polygon(coords as any, {
-          color: '#3b82f6',
-          weight: 3,
-          fillColor: '#3b82f6',
-          fillOpacity: 0.2,
-        }).bindPopup(`<b>🌾 ${lote.nombre}</b><br/>📐 ${formatearArea(lote.hectareas)} ha`)
-          .addTo(lotesLayerRef.current);
+      if (data.length > 0) {
+        setCampoSeleccionado(data[0]);
       }
-    });
+    } catch (error) {
+      console.error('Error cargando campos:', error);
+    }
   };
 
   const agregarPunto = (e: L.LeafletMouseEvent) => {
@@ -154,7 +176,6 @@ const LotesPage = () => {
       alert('⚠️ Primero seleccioná o creá un campo');
       return;
     }
-    
     markersRef.current.forEach(m => mapInstanceRef.current?.removeLayer(m));
     markersRef.current = [];
     if (lineasRef.current) mapInstanceRef.current?.removeLayer(lineasRef.current);
@@ -169,26 +190,23 @@ const LotesPage = () => {
       alert(`Marcá al menos 3 puntos (actual: ${puntosRef.current.length})`);
       return;
     }
-
     const nombre = window.prompt('📝 Ingresá el nombre del lote:', 'Lote Nuevo');
     if (!nombre || !nombre.trim()) {
       alert('El nombre es obligatorio');
       return;
     }
-
     if (!campoSeleccionado) {
       alert('No hay campo seleccionado');
       return;
     }
 
     const polygonCoords = [...puntosRef.current, puntosRef.current[0]];
-    const polygonGeoJSON = { type: 'Polygon', coordinates: [polygonCoords] };
+    const polygonGeoJSON = { type: 'Polygon' as const, coordinates: [polygonCoords] };
     const areaMetros = turf.area(polygonGeoJSON);
     const areaHectareas = areaMetros / 10000;
 
     try {
-      await crearLote(nombre.trim(), polygonGeoJSON, areaHectareas, campoSeleccionado.id, token!);
-      
+      await crearLote(nombre.trim(), polygonGeoJSON, areaHectareas, campoSeleccionado.id);
       markersRef.current.forEach(m => mapInstanceRef.current?.removeLayer(m));
       markersRef.current = [];
       if (lineasRef.current) mapInstanceRef.current?.removeLayer(lineasRef.current);
@@ -196,10 +214,7 @@ const LotesPage = () => {
       setPuntos([]);
       modoDibujoRef.current = false;
       setModoDibujo(false);
-      
-      await cargarLotes();
-      dibujarLotesGuardados();
-      
+      await cargarLotesDelCampo(campoSeleccionado);
       alert(`✅ Lote "${nombre}" guardado`);
     } catch (error) {
       console.error(error);
@@ -237,27 +252,27 @@ const LotesPage = () => {
 
     map.on('click', agregarPunto);
 
-    return () => map.remove();
+    return () => { map.remove(); };
   }, []);
-
-  useEffect(() => {
-    if (mapInstanceRef.current && lotes.length > 0) {
-      dibujarLotesGuardados();
-    }
-  }, [lotes]);
 
   useEffect(() => {
     cargarCampos();
   }, []);
 
   useEffect(() => {
+    console.log('🔄 useEffect campoSeleccionado cambió a:', campoSeleccionado?.id, campoSeleccionado?.nombre);
     if (campoSeleccionado) {
-      cargarLotes();
+      cargarLotesDelCampo(campoSeleccionado);
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([campoSeleccionado.latitud_centro || -32.1612, campoSeleccionado.longitud_centro || -63.4616], 13);
+        mapInstanceRef.current.flyTo(
+          [campoSeleccionado.latitud_centro || -32.1612, campoSeleccionado.longitud_centro || -63.4616],
+          13
+        );
       }
     } else {
       setLotes([]);
+      dibujarLotesGuardados([]);
+      setLoteSeleccionadoId(null);
     }
   }, [campoSeleccionado]);
 
@@ -287,20 +302,19 @@ const LotesPage = () => {
         <div className="flex gap-2 mt-3">
           <select
             className="px-3 py-1.5 border rounded-lg text-sm flex-1"
-            value={campoSeleccionado?.id || ''}
+            value={campoSeleccionado?.id?.toString() ?? ""}
             onChange={(e) => {
-              const value = e.target.value;
-              if (value === '') {
-                setCampoSeleccionado(null);
-              } else {
-                const campo = campos.find(c => c.id === Number(value));
-                setCampoSeleccionado(campo || null);
-              }
+              const selectedId = e.target.value === "" ? null : parseInt(e.target.value);
+              const campo = campos.find(c => c.id === selectedId);
+              console.log('🔵 Selector cambió a:', selectedId, '→ campo encontrado:', campo?.nombre);
+              setCampoSeleccionado(campo || null);
             }}
           >
             <option value="">-- Seleccionar campo --</option>
             {campos.map(campo => (
-              <option key={campo.id} value={campo.id}>📍 {campo.nombre}</option>
+              <option key={campo.id} value={campo.id.toString()}>
+                📍 {campo.nombre}
+              </option>
             ))}
           </select>
           
@@ -334,17 +348,34 @@ const LotesPage = () => {
         </div>
       )}
 
+      {/* ✅ NUEVO: Gráfico NDVI */}
+      <div className="p-4 bg-gray-50 border-t">
+        <GraficoNDVI 
+          loteId={loteSeleccionadoId || 0} 
+          loteNombre={lotes.find(l => l.id === loteSeleccionadoId)?.nombre} 
+        />
+      </div>
+
       <div className="bg-gray-50 border-t p-4">
         <h2 className="font-semibold mb-2">📦 Lotes</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {lotes.map((lote) => (
-            <div key={lote.id} className="bg-white rounded p-2 shadow text-sm flex justify-between items-center">
+            <div 
+              key={lote.id} 
+              className={`bg-white rounded p-2 shadow text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${
+                loteSeleccionadoId === lote.id ? 'border-2 border-green-500' : ''
+              }`}
+              onClick={() => setLoteSeleccionadoId(lote.id)}
+            >
               <div>
                 <b>{lote.nombre}</b><br />
                 {formatearArea(lote.hectareas)} ha
               </div>
               <button
-                onClick={() => handleEliminarLote(lote.id, lote.nombre)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEliminarLote(lote.id, lote.nombre);
+                }}
                 className="text-red-500 hover:text-red-700 text-lg px-2"
                 title="Eliminar lote"
               >
@@ -353,7 +384,7 @@ const LotesPage = () => {
             </div>
           ))}
           {lotes.length === 0 && campoSeleccionado && (
-            <div className="text-gray-500 text-sm">No hay lotes</div>
+            <div className="text-gray-500 text-sm">No hay lotes en este campo</div>
           )}
         </div>
       </div>

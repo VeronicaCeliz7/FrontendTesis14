@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useState, ReactNode } from 'react';
 
 interface AuthContextType {
   token: string | null;
@@ -11,21 +11,15 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [user, setUser] = useState<any | null>(null);
-
-  // Cargar token desde localStorage al iniciar
-  useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
-    if (savedToken) {
-      setToken(savedToken);
+  const [token, setToken] = useState<string | null>(
+    () => localStorage.getItem('token')
+  );
+  const [user, setUser] = useState<any | null>(
+    () => {
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) : null;
     }
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-  }, []);
+  );
 
   const login = (token: string, user: any) => {
     setToken(token);
