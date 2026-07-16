@@ -2,10 +2,18 @@ import { useState, useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import * as turf from '@turf/turf';
-import { listarLotesPorCampo, crearLote, eliminarLote } from '../services/lotes.service';
+import { 
+    listarLotesPorCampo, 
+    crearLote, 
+    actualizarLote,
+    eliminarLote 
+} from '../services/lotes.service';
 import { listarCampos, crearCampo, Campo } from '../services/campos.service';
-import GraficoNDVI from '../components/common/GraficoNDVI'; // ✅ NUEVO
+import GraficoNDVI from '../components/common/GraficoNDVI';
 
+// =============================================
+// CONFIGURACIÓN DE LEAFLET
+// =============================================
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -13,21 +21,38 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
+// =============================================
+// FUNCIÓN PARA FORMATEAR ÁREA
+// =============================================
 const formatearArea = (hectareas: any): string => {
   if (hectareas === null || hectareas === undefined) return '0.00';
   const num = typeof hectareas === 'number' ? hectareas : parseFloat(hectareas);
   return isNaN(num) ? '0.00' : num.toFixed(2);
 };
 
+// =============================================
+// COMPONENTE PRINCIPAL
+// =============================================
 const LotesPage = () => {
+  // =============================================
+  // ESTADOS
+  // =============================================
   const [lotes, setLotes] = useState<any[]>([]);
   const [campos, setCampos] = useState<Campo[]>([]);
   const [campoSeleccionado, setCampoSeleccionado] = useState<Campo | null>(null);
-  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState<number | null>(null); // ✅ NUEVO
-
+  const [loteSeleccionadoId, setLoteSeleccionadoId] = useState<number | null>(null);
+  
+  // Estados para edición
+  const [loteEditando, setLoteEditando] = useState<any | null>(null);
+  const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
+  
+  // Estados para dibujo
   const [modoDibujo, setModoDibujo] = useState(false);
   const [puntos, setPuntos] = useState<any[]>([]);
   
+  // =============================================
+  // REFERENCIAS (REFS)
+  // =============================================
   const puntosRef = useRef<any[]>([]);
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -36,8 +61,11 @@ const LotesPage = () => {
   const lotesLayerRef = useRef<any>(null);
   const modoDibujoRef = useRef(false);
 
+  // =============================================
+  // FUNCIONES DEL MAPA
+  // =============================================
   const dibujarLotesGuardados = (lotesADibujar: any[]) => {
-    console.log('🗺️ dibujarLotesGuardados llamado con', lotesADibujar.length, 'lotes:', lotesADibujar.map(l => `${l.nombre}(campo:${l.campo_id})`));
+    console.log('🗺️ dibujarLotesGuardados llamado con', lotesADibujar.length, 'lotes');
     if (!mapInstanceRef.current) {
       console.log('❌ mapInstanceRef.current es null, abortando dibujo');
       return;
@@ -70,77 +98,6 @@ const LotesPage = () => {
     });
   };
 
-  const cargarLotesDelCampo = async (campo: Campo | null) => {
-    console.log('🟢 cargarLotesDelCampo llamado para campo:', campo?.id, campo?.nombre);
-    if (!campo) {
-      setLotes([]);
-      dibujarLotesGuardados([]);
-      setLoteSeleccionadoId(null); // ✅ Limpiar selección
-      return;
-    }
-    try {
-      const data = await listarLotesPorCampo(campo.id);
-      console.log('✅ Lotes recibidos:', data.length, data.map((l: any) => `${l.nombre}(campo:${l.campo_id})`));
-      setLotes(data);
-      dibujarLotesGuardados(data);
-      if (data.length > 0) {
-        setLoteSeleccionadoId(data[0].id); // ✅ Seleccionar el primero automáticamente
-      }
-    } catch (error) {
-      console.error('Error cargando lotes:', error);
-      setLotes([]);
-      dibujarLotesGuardados([]);
-      setLoteSeleccionadoId(null);
-    }
-  };
-
-  const handleEliminarLote = async (loteId: number, loteNombre: string) => {
-    if (confirm(`¿Eliminar el lote "${loteNombre}"?`)) {
-      try {
-        await eliminarLote(loteId, campoSeleccionado!.id);
-        await cargarLotesDelCampo(campoSeleccionado);
-        alert(`✅ Lote "${loteNombre}" eliminado`);
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error al eliminar');
-      }
-    }
-  };
-
-  const crearNuevoCampo = async () => {
-    const nombre = window.prompt('📌 Nombre del nuevo campo:', 'Mi Campo');
-    if (!nombre || !nombre.trim()) {
-      alert('El nombre es obligatorio');
-      return;
-    }
-    try {
-      const nuevoCampo = await crearCampo({
-        nombre: nombre.trim(),
-        ubicacion: '',
-        latitud_centro: -32.1612,
-        longitud_centro: -63.4616
-      });
-      setCampos(prev => [...prev, nuevoCampo]);
-      setCampoSeleccionado(nuevoCampo);
-      alert(`✅ Campo "${nombre}" creado correctamente`);
-    } catch (error: any) {
-      console.error(error);
-      alert('Error al crear campo: ' + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const cargarCampos = async () => {
-    try {
-      const data = await listarCampos();
-      setCampos(data);
-      if (data.length > 0) {
-        setCampoSeleccionado(data[0]);
-      }
-    } catch (error) {
-      console.error('Error cargando campos:', error);
-    }
-  };
-
   const agregarPunto = (e: L.LeafletMouseEvent) => {
     if (!modoDibujoRef.current) return;
 
@@ -171,6 +128,70 @@ const LotesPage = () => {
     }
   };
 
+  // =============================================
+  // FUNCIONES DE LOTES
+  // =============================================
+  const cargarLotesDelCampo = async (campo: Campo | null) => {
+    console.log('🟢 cargarLotesDelCampo llamado para campo:', campo?.id, campo?.nombre);
+    if (!campo) {
+      setLotes([]);
+      dibujarLotesGuardados([]);
+      setLoteSeleccionadoId(null);
+      return;
+    }
+    try {
+      const data = await listarLotesPorCampo(campo.id);
+      console.log('✅ Lotes recibidos:', data.length);
+      setLotes(data);
+      dibujarLotesGuardados(data);
+      if (data.length > 0) {
+        setLoteSeleccionadoId(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error cargando lotes:', error);
+      setLotes([]);
+      dibujarLotesGuardados([]);
+      setLoteSeleccionadoId(null);
+    }
+  };
+
+  const cargarCampos = async () => {
+    try {
+      const data = await listarCampos();
+      setCampos(data);
+      if (data.length > 0) {
+        setCampoSeleccionado(data[0]);
+      }
+    } catch (error) {
+      console.error('Error cargando campos:', error);
+    }
+  };
+
+  const crearNuevoCampo = async () => {
+    const nombre = window.prompt('📌 Nombre del nuevo campo:', 'Mi Campo');
+    if (!nombre || !nombre.trim()) {
+      alert('El nombre es obligatorio');
+      return;
+    }
+    try {
+      const nuevoCampo = await crearCampo({
+        nombre: nombre.trim(),
+        ubicacion: '',
+        latitud_centro: -32.1612,
+        longitud_centro: -63.4616
+      });
+      setCampos(prev => [...prev, nuevoCampo]);
+      setCampoSeleccionado(nuevoCampo);
+      alert(`✅ Campo "${nombre}" creado correctamente`);
+    } catch (error: any) {
+      console.error(error);
+      alert('Error al crear campo: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
+  // =============================================
+  // FUNCIONES DE DIBUJO
+  // =============================================
   const activarDibujo = () => {
     if (!campoSeleccionado) {
       alert('⚠️ Primero seleccioná o creá un campo');
@@ -232,6 +253,76 @@ const LotesPage = () => {
     setModoDibujo(false);
   };
 
+  // =============================================
+  // FUNCIONES DE EDICIÓN
+  // =============================================
+  const handleEditarLote = (lote: any) => {
+    setLoteEditando({
+      ...lote,
+      hectareas: lote.hectareas || 0
+    });
+    setMostrarModalEdicion(true);
+  };
+
+  const handleGuardarEdicion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!loteEditando) return;
+    if (!campoSeleccionado) {
+      alert('No hay campo seleccionado');
+      return;
+    }
+
+    if (!loteEditando.nombre || loteEditando.nombre.trim() === '') {
+      alert('El nombre del lote es obligatorio');
+      return;
+    }
+
+    try {
+      console.log('📝 Actualizando lote:', loteEditando.id, loteEditando.nombre);
+      
+      await actualizarLote(loteEditando.id, {
+        nombre: loteEditando.nombre.trim(),
+        hectareas: parseFloat(loteEditando.hectareas) || 0,
+        poligono_geojson: loteEditando.poligono_geojson,
+        campo_id: campoSeleccionado.id,
+      });
+
+      await cargarLotesDelCampo(campoSeleccionado);
+      
+      setMostrarModalEdicion(false);
+      setLoteEditando(null);
+      
+      alert('✅ Lote actualizado correctamente');
+    } catch (error: any) {
+      console.error('Error al actualizar:', error);
+      alert(error.response?.data?.error || 'Error al actualizar el lote');
+    }
+  };
+
+  const handleEliminarLote = async (loteId: number, loteNombre: string) => {
+    if (!confirm(`¿Eliminar el lote "${loteNombre}"?`)) return;
+    
+    if (!campoSeleccionado) {
+      alert('No hay campo seleccionado');
+      return;
+    }
+
+    try {
+      await eliminarLote(loteId, campoSeleccionado.id);
+      await cargarLotesDelCampo(campoSeleccionado);
+      alert(`✅ Lote "${loteNombre}" eliminado`);
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar');
+    }
+  };
+
+  // =============================================
+  // EFECTOS (useEffect)
+  // =============================================
+  
+  // Inicializar el mapa
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -255,12 +346,14 @@ const LotesPage = () => {
     return () => { map.remove(); };
   }, []);
 
+  // Cargar campos al montar
   useEffect(() => {
     cargarCampos();
   }, []);
 
+  // Cargar lotes cuando cambia el campo seleccionado
   useEffect(() => {
-    console.log('🔄 useEffect campoSeleccionado cambió a:', campoSeleccionado?.id, campoSeleccionado?.nombre);
+    console.log('🔄 useEffect campoSeleccionado cambió a:', campoSeleccionado?.id);
     if (campoSeleccionado) {
       cargarLotesDelCampo(campoSeleccionado);
       if (mapInstanceRef.current) {
@@ -276,8 +369,76 @@ const LotesPage = () => {
     }
   }, [campoSeleccionado]);
 
+  // =============================================
+  // 🔍 ZOOM AL LOTE SELECCIONADO (NUEVO)
+  // =============================================
+  useEffect(() => {
+    if (!loteSeleccionadoId || !mapInstanceRef.current || lotes.length === 0) return;
+
+    // Buscar el lote seleccionado
+    const lote = lotes.find(l => l.id === loteSeleccionadoId);
+    if (!lote) return;
+
+    console.log(`🗺️ Volando al lote: ${lote.nombre} (ID: ${lote.id})`);
+
+    // Si el lote no tiene polígono, volar al centro del campo
+    if (!lote.poligono_geojson || !lote.poligono_geojson.coordinates) {
+      console.log('⚠️ Lote sin polígono, volando al campo');
+      if (campoSeleccionado) {
+        mapInstanceRef.current.flyTo(
+          [campoSeleccionado.latitud_centro || -32.1612, campoSeleccionado.longitud_centro || -63.4616],
+          13,
+          { duration: 1.5 }
+        );
+      }
+      return;
+    }
+
+    try {
+      // Extraer las coordenadas del polígono
+      const coords = lote.poligono_geojson.coordinates[0];
+      if (!coords || coords.length === 0) {
+        console.log('⚠️ Polígono sin coordenadas');
+        return;
+      }
+
+      // Calcular el centro del polígono (promedio de lat/lng)
+      let latSum = 0, lngSum = 0;
+      let count = 0;
+      coords.forEach((p: number[]) => {
+        if (p && p.length === 2) {
+          lngSum += p[0];
+          latSum += p[1];
+          count++;
+        }
+      });
+
+      if (count === 0) {
+        console.log('⚠️ No hay coordenadas válidas');
+        return;
+      }
+
+      const centerLat = latSum / count;
+      const centerLng = lngSum / count;
+
+      console.log(`📍 Centro del lote: ${centerLat.toFixed(4)}, ${centerLng.toFixed(4)}`);
+
+      // ✅ Volar al centro del lote con zoom 15
+      mapInstanceRef.current.flyTo([centerLat, centerLng], 15, {
+        duration: 1.5,
+      });
+
+    } catch (error) {
+      console.error('❌ Error al hacer zoom al lote:', error);
+    }
+  }, [loteSeleccionadoId, lotes, campoSeleccionado]);
+
+  // =============================================
+  // RENDER
+  // =============================================
   return (
     <div className="h-full flex flex-col">
+      {/* HEADER */}
       <div className="bg-white border-b p-4">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Mis Lotes</h1>
@@ -338,17 +499,19 @@ const LotesPage = () => {
         )}
       </div>
 
+      {/* MAPA */}
       <div className="flex-1">
         <div ref={mapRef} style={{ width: '100%', height: '500px', backgroundColor: '#f0f0f0' }} />
       </div>
 
+      {/* MODO DIBUJO */}
       {modoDibujo && (
         <div className="bg-yellow-100 p-2 text-center text-sm">
           ✏️ Modo dibujo: hacé clic en el mapa ({puntos.length} puntos)
         </div>
       )}
 
-      {/* ✅ NUEVO: Gráfico NDVI */}
+      {/* GRÁFICO NDVI */}
       <div className="p-4 bg-gray-50 border-t">
         <GraficoNDVI 
           loteId={loteSeleccionadoId || 0} 
@@ -356,6 +519,7 @@ const LotesPage = () => {
         />
       </div>
 
+      {/* LISTA DE LOTES */}
       <div className="bg-gray-50 border-t p-4">
         <h2 className="font-semibold mb-2">📦 Lotes</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -371,16 +535,28 @@ const LotesPage = () => {
                 <b>{lote.nombre}</b><br />
                 {formatearArea(lote.hectareas)} ha
               </div>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEliminarLote(lote.id, lote.nombre);
-                }}
-                className="text-red-500 hover:text-red-700 text-lg px-2"
-                title="Eliminar lote"
-              >
-                🗑️
-              </button>
+              <div className="flex gap-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditarLote(lote);
+                  }}
+                  className="text-blue-500 hover:text-blue-700 text-base px-1"
+                  title="Editar lote"
+                >
+                  ✏️
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEliminarLote(lote.id, lote.nombre);
+                  }}
+                  className="text-red-500 hover:text-red-700 text-base px-1"
+                  title="Eliminar lote"
+                >
+                  🗑️
+                </button>
+              </div>
             </div>
           ))}
           {lotes.length === 0 && campoSeleccionado && (
@@ -388,6 +564,84 @@ const LotesPage = () => {
           )}
         </div>
       </div>
+
+      {/* ============================================= */}
+      {/* MODAL DE EDICIÓN - CON Z-INDEX ARREGLADO */}
+      {/* ============================================= */}
+      {mostrarModalEdicion && loteEditando && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[9999]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-xl font-bold mb-4">✏️ Editar Lote</h3>
+            
+            <form onSubmit={handleGuardarEdicion}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre del Lote *
+                </label>
+                <input
+                  type="text"
+                  value={loteEditando.nombre || ''}
+                  onChange={(e) => setLoteEditando({
+                    ...loteEditando,
+                    nombre: e.target.value
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Hectáreas *
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={loteEditando.hectareas || ''}
+                  onChange={(e) => setLoteEditando({
+                    ...loteEditando,
+                    hectareas: parseFloat(e.target.value) || 0
+                  })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  ID del Lote (solo lectura)
+                </label>
+                <input
+                  type="text"
+                  value={loteEditando.id}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-200 rounded-md bg-gray-100 text-gray-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMostrarModalEdicion(false);
+                    setLoteEditando(null);
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  💾 Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
