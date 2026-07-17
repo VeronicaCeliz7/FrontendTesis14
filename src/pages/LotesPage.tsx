@@ -10,6 +10,8 @@ import {
 } from '../services/lotes.service';
 import { listarCampos, crearCampo, Campo } from '../services/campos.service';
 import GraficoNDVI from '../components/common/GraficoNDVI';
+import { obtenerUltimaDecision } from '../services/decisiones.service';
+import { DecisionCorte } from '../types/DecisionCorte';
 
 // =============================================
 // CONFIGURACIÓN DE LEAFLET
@@ -31,6 +33,24 @@ const formatearArea = (hectareas: any): string => {
 };
 
 // =============================================
+// ✅ FUNCIÓN SEGURA PARA FORMATEAR NDVI
+// =============================================
+const formatearNDVI = (ndvi: any): string => {
+  if (ndvi === null || ndvi === undefined) return 'N/A';
+  const num = typeof ndvi === 'number' ? ndvi : parseFloat(ndvi);
+  return isNaN(num) ? 'N/A' : num.toFixed(3);
+};
+
+// =============================================
+// ✅ FUNCIÓN SEGURA PARA FORMATEAR RADIACIÓN
+// =============================================
+const formatearRadiacion = (radiacion: any): string | null => {
+  if (radiacion === null || radiacion === undefined) return null;
+  const num = typeof radiacion === 'number' ? radiacion : parseFloat(radiacion);
+  return isNaN(num) ? null : `${num.toFixed(1)} MJ/m²`;
+};
+
+// =============================================
 // COMPONENTE PRINCIPAL
 // =============================================
 const LotesPage = () => {
@@ -42,14 +62,15 @@ const LotesPage = () => {
   const [campoSeleccionado, setCampoSeleccionado] = useState<Campo | null>(null);
   const [loteSeleccionadoId, setLoteSeleccionadoId] = useState<number | null>(null);
   
-  // Estados para edición
   const [loteEditando, setLoteEditando] = useState<any | null>(null);
   const [mostrarModalEdicion, setMostrarModalEdicion] = useState(false);
   
-  // Estados para dibujo
   const [modoDibujo, setModoDibujo] = useState(false);
   const [puntos, setPuntos] = useState<any[]>([]);
-  
+
+  const [decisiones, setDecisiones] = useState<Map<number, DecisionCorte>>(new Map());
+  const [cargandoDecisiones, setCargandoDecisiones] = useState<Set<number>>(new Set());
+
   // =============================================
   // REFERENCIAS (REFS)
   // =============================================
@@ -65,9 +86,14 @@ const LotesPage = () => {
   // FUNCIONES DEL MAPA
   // =============================================
   const dibujarLotesGuardados = (lotesADibujar: any[]) => {
-    console.log('🗺️ dibujarLotesGuardados llamado con', lotesADibujar.length, 'lotes');
+    console.log('🗺️ dibujarLotesGuardados llamado con', lotesADibujar?.length || 0, 'lotes');
     if (!mapInstanceRef.current) {
       console.log('❌ mapInstanceRef.current es null, abortando dibujo');
+      return;
+    }
+
+    if (!lotesADibujar || lotesADibujar.length === 0) {
+      console.log('⚠️ No hay lotes para dibujar');
       return;
     }
 
@@ -85,13 +111,72 @@ const LotesPage = () => {
       console.log('📌 Dibujando lote:', lote.nombre, 'campo_id:', lote.campo_id);
       if (lote.poligono_geojson?.coordinates) {
         const coords = lote.poligono_geojson.coordinates[0].map((p: number[]) => [p[1], p[0]]);
+        
+        const decision = decisiones.get(lote.id);
+        const semaforo = decision?.semaforo || '🟡 Esperar';
+        const ndvi = formatearNDVI(decision?.ndvi_actual);
+        const radiacion = formatearRadiacion(decision?.radiacion_mj_m2);
+        const motivo = decision?.motivo || 'Sin decisión aún';
+        const recomendacion = decision?.recomendacion || 'Esperando datos del satélite.';
+        
+        const colorMap: Record<string, string> = {
+          '🟢 Corte': '#22c55e',
+          '🟡 Esperar': '#eab308',
+          '🔴 Riesgo': '#ef4444'
+        };
+        const color = colorMap[semaforo] || '#3b82f6';
+        
+        const popupHTML = `
+          <div style="font-family: system-ui, sans-serif; padding: 4px; min-width: 220px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+              <span style="font-size: 24px;">🌾</span>
+              <strong style="font-size: 16px;">${lote.nombre}</strong>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="font-size: 28px;">${semaforo}</span>
+              <span style="font-weight: bold; font-size: 14px;">${semaforo.split(' ')[1] || 'Esperar'}</span>
+            </div>
+            
+            <hr style="margin: 6px 0; border: 0.5px solid #e5e7eb;">
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 13px;">
+              <span style="color: #6b7280;">📐 Hectáreas</span>
+              <span style="font-weight: 500;">${formatearArea(lote.hectareas)} ha</span>
+              
+              <span style="color: #6b7280;">📊 NDVI</span>
+              <span style="font-weight: 500; ${ndvi !== 'N/A' && parseFloat(ndvi) > 0.7 ? 'color: #22c55e;' : parseFloat(ndvi) > 0.4 ? 'color: #eab308;' : 'color: #ef4444;'}">${ndvi}</span>
+              
+              ${radiacion ? `
+                <span style="color: #6b7280;">☀️ Radiación</span>
+                <span style="font-weight: 500;">${radiacion}</span>
+              ` : ''}
+            </div>
+            
+            <hr style="margin: 6px 0; border: 0.5px solid #e5e7eb;">
+            
+            <div style="font-size: 12px; color: #4b5563; line-height: 1.4;">
+              <div style="font-weight: 600; color: #1f2937;">📝 Recomendación</div>
+              <div style="margin-top: 2px;">${recomendacion}</div>
+              ${motivo && motivo !== recomendacion ? `
+                <div style="margin-top: 4px; font-size: 11px; color: #6b7280; font-style: italic;">${motivo}</div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        const popup = L.popup()
+          .setContent(popupHTML)
+          .on('popupopen', () => {
+            setLoteSeleccionadoId(lote.id);
+          });
+
         L.polygon(coords as any, {
-          color: '#3b82f6',
+          color: color,
           weight: 3,
-          fillColor: '#3b82f6',
+          fillColor: color,
           fillOpacity: 0.2,
-        }).bindPopup(`<b>🌾 ${lote.nombre}</b><br/>📐 ${formatearArea(lote.hectareas)} ha`)
-          .addTo(lotesLayerRef.current);
+        }).bindPopup(popup).addTo(lotesLayerRef.current);
       } else {
         console.log('⚠️ Lote sin coordenadas:', lote.nombre);
       }
@@ -137,21 +222,48 @@ const LotesPage = () => {
       setLotes([]);
       dibujarLotesGuardados([]);
       setLoteSeleccionadoId(null);
+      setDecisiones(new Map());
       return;
     }
     try {
       const data = await listarLotesPorCampo(campo.id);
       console.log('✅ Lotes recibidos:', data.length);
       setLotes(data);
+      setDecisiones(new Map());
       dibujarLotesGuardados(data);
       if (data.length > 0) {
         setLoteSeleccionadoId(data[0].id);
+        data.forEach(lote => cargarDecision(lote.id));
       }
     } catch (error) {
       console.error('Error cargando lotes:', error);
       setLotes([]);
       dibujarLotesGuardados([]);
       setLoteSeleccionadoId(null);
+      setDecisiones(new Map());
+    }
+  };
+
+  const cargarDecision = async (loteId: number) => {
+    if (cargandoDecisiones.has(loteId)) return;
+    if (decisiones.has(loteId)) return;
+
+    setCargandoDecisiones(prev => new Set(prev).add(loteId));
+    
+    try {
+      const decision = await obtenerUltimaDecision(loteId);
+      if (decision) {
+        setDecisiones(prev => new Map(prev).set(loteId, decision));
+        dibujarLotesGuardados(lotes);
+      }
+    } catch (error) {
+      console.error(`❌ Error cargando decisión para lote ${loteId}:`, error);
+    } finally {
+      setCargandoDecisiones(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(loteId);
+        return newSet;
+      });
     }
   };
 
@@ -322,7 +434,6 @@ const LotesPage = () => {
   // EFECTOS (useEffect)
   // =============================================
   
-  // Inicializar el mapa
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -346,12 +457,10 @@ const LotesPage = () => {
     return () => { map.remove(); };
   }, []);
 
-  // Cargar campos al montar
   useEffect(() => {
     cargarCampos();
   }, []);
 
-  // Cargar lotes cuando cambia el campo seleccionado
   useEffect(() => {
     console.log('🔄 useEffect campoSeleccionado cambió a:', campoSeleccionado?.id);
     if (campoSeleccionado) {
@@ -366,22 +475,30 @@ const LotesPage = () => {
       setLotes([]);
       dibujarLotesGuardados([]);
       setLoteSeleccionadoId(null);
+      setDecisiones(new Map());
     }
   }, [campoSeleccionado]);
 
-  // =============================================
-  // 🔍 ZOOM AL LOTE SELECCIONADO (NUEVO)
-  // =============================================
+  useEffect(() => {
+    if (loteSeleccionadoId) {
+      cargarDecision(loteSeleccionadoId);
+    }
+  }, [loteSeleccionadoId]);
+
+  useEffect(() => {
+    if (lotes.length > 0 && decisiones.size > 0) {
+      dibujarLotesGuardados(lotes);
+    }
+  }, [decisiones]);
+
   useEffect(() => {
     if (!loteSeleccionadoId || !mapInstanceRef.current || lotes.length === 0) return;
 
-    // Buscar el lote seleccionado
     const lote = lotes.find(l => l.id === loteSeleccionadoId);
     if (!lote) return;
 
     console.log(`🗺️ Volando al lote: ${lote.nombre} (ID: ${lote.id})`);
 
-    // Si el lote no tiene polígono, volar al centro del campo
     if (!lote.poligono_geojson || !lote.poligono_geojson.coordinates) {
       console.log('⚠️ Lote sin polígono, volando al campo');
       if (campoSeleccionado) {
@@ -395,14 +512,12 @@ const LotesPage = () => {
     }
 
     try {
-      // Extraer las coordenadas del polígono
       const coords = lote.poligono_geojson.coordinates[0];
       if (!coords || coords.length === 0) {
         console.log('⚠️ Polígono sin coordenadas');
         return;
       }
 
-      // Calcular el centro del polígono (promedio de lat/lng)
       let latSum = 0, lngSum = 0;
       let count = 0;
       coords.forEach((p: number[]) => {
@@ -423,7 +538,6 @@ const LotesPage = () => {
 
       console.log(`📍 Centro del lote: ${centerLat.toFixed(4)}, ${centerLng.toFixed(4)}`);
 
-      // ✅ Volar al centro del lote con zoom 15
       mapInstanceRef.current.flyTo([centerLat, centerLng], 15, {
         duration: 1.5,
       });
@@ -523,44 +637,68 @@ const LotesPage = () => {
       <div className="bg-gray-50 border-t p-4">
         <h2 className="font-semibold mb-2">📦 Lotes</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-          {lotes.map((lote) => (
-            <div 
-              key={lote.id} 
-              className={`bg-white rounded p-2 shadow text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${
-                loteSeleccionadoId === lote.id ? 'border-2 border-green-500' : ''
-              }`}
-              onClick={() => setLoteSeleccionadoId(lote.id)}
-            >
-              <div>
-                <b>{lote.nombre}</b><br />
-                {formatearArea(lote.hectareas)} ha
-              </div>
-              <div className="flex gap-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditarLote(lote);
-                  }}
-                  className="text-blue-500 hover:text-blue-700 text-base px-1"
-                  title="Editar lote"
+          {lotes && lotes.length > 0 ? (
+            lotes.map((lote) => {
+              const decision = decisiones.get(lote.id);
+              const semaforo = decision?.semaforo || '🟡 Esperar';
+              const ndvi = formatearNDVI(decision?.ndvi_actual);
+              
+              const colorMap: Record<string, string> = {
+                '🟢 Corte': 'border-green-500 bg-green-50',
+                '🟡 Esperar': 'border-yellow-500 bg-yellow-50',
+                '🔴 Riesgo': 'border-red-500 bg-red-50'
+              };
+              const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white';
+              
+              return (
+                <div 
+                  key={lote.id} 
+                  className={`rounded p-2 shadow text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition border-l-4 ${borderColor} ${
+                    loteSeleccionadoId === lote.id ? 'border-2 border-green-500' : ''
+                  }`}
+                  onClick={() => setLoteSeleccionadoId(lote.id)}
                 >
-                  ✏️
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEliminarLote(lote.id, lote.nombre);
-                  }}
-                  className="text-red-500 hover:text-red-700 text-base px-1"
-                  title="Eliminar lote"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-          ))}
-          {lotes.length === 0 && campoSeleccionado && (
-            <div className="text-gray-500 text-sm">No hay lotes en este campo</div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-2xl flex-shrink-0" title={decision?.motivo || 'Sin decisión'}>
+                      {semaforo}
+                    </span>
+                    <div className="truncate">
+                      <b className="truncate block">{lote.nombre}</b>
+                      <span className="text-gray-500 text-xs">
+                        {formatearArea(lote.hectareas)} ha
+                        {ndvi !== 'N/A' && (
+                          <> • NDVI: {ndvi}</>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0 ml-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditarLote(lote);
+                      }}
+                      className="text-blue-500 hover:text-blue-700 text-base px-1"
+                      title="Editar lote"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEliminarLote(lote.id, lote.nombre);
+                      }}
+                      className="text-red-500 hover:text-red-700 text-base px-1"
+                      title="Eliminar lote"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="text-gray-500 text-sm col-span-full">No hay lotes en este campo</div>
           )}
         </div>
       </div>
