@@ -14,23 +14,38 @@ import {
   Legend
 } from 'recharts';
 
+// ✅ FUNCIÓN SEGURA PARA FORMATEAR NDVI
+const formatearNDVI = (ndvi: any): string => {
+  if (ndvi === null || ndvi === undefined) return 'N/A';
+  const num = typeof ndvi === 'number' ? ndvi : parseFloat(ndvi);
+  return isNaN(num) ? 'N/A' : num.toFixed(3);
+};
+
 const DashboardPage = () => {
   const [resumen, setResumen] = useState({ verde: 0, amarillo: 0, rojo: 0, total: 0 });
   const [decisionesRecientes, setDecisionesRecientes] = useState<DecisionCorte[]>([]);
   const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const cargarDatos = async () => {
       try {
         setCargando(true);
-        const [resumenData, decisionesData] = await Promise.all([
-          obtenerResumenDecisiones(),
-          obtenerDecisionesRecientes()
-        ]);
+        setError(null);
+        
+        console.log('📊 Cargando resumen de decisiones...');
+        const resumenData = await obtenerResumenDecisiones();
+        console.log('📊 Resumen recibido:', resumenData);
         setResumen(resumenData);
+
+        console.log('📋 Cargando decisiones recientes...');
+        const decisionesData = await obtenerDecisionesRecientes();
+        console.log('📋 Decisiones recibidas:', decisionesData);
         setDecisionesRecientes(decisionesData);
-      } catch (error) {
+        
+      } catch (error: any) {
         console.error('❌ Error cargando dashboard:', error);
+        setError(error.message || 'Error al cargar los datos');
       } finally {
         setCargando(false);
       }
@@ -52,6 +67,24 @@ const DashboardPage = () => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Cargando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[400px]">
+        <div className="text-center text-red-600">
+          <p className="text-4xl mb-2">❌</p>
+          <p className="text-lg font-semibold">Error al cargar el dashboard</p>
+          <p className="text-sm text-gray-500">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -144,9 +177,7 @@ const DashboardPage = () => {
                         <span className="text-2xl">{dec.semaforo}</span>
                       </td>
                       <td className="p-2">
-                        {dec.ndvi_actual !== null && dec.ndvi_actual !== undefined
-                          ? dec.ndvi_actual.toFixed(3)
-                          : 'N/A'}
+                        {formatearNDVI(dec.ndvi_actual)}
                       </td>
                     </tr>
                   ))}

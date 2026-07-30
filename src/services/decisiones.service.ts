@@ -1,10 +1,9 @@
 // TesisFrontend/src/services/decisiones.service.ts
-import axios from 'axios';
+import api from '../lib/axios';
 
 // =============================================
-// CONFIGURACIÓN BASE (VITE)
+// CONFIGURACIÓN BASE
 // =============================================
-// ✅ Vite usa import.meta.env en lugar de process.env
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/internal';
 
 // =============================================
@@ -43,21 +42,7 @@ export interface DecisionesResponse {
  */
 export async function obtenerUltimaDecision(loteId: number): Promise<DecisionCorte | null> {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('⚠️ No hay token de autenticación');
-            return null;
-        }
-
-        const response = await axios.get<DecisionCorte>(
-            `${API_URL}/decisiones/ultima/${loteId}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-        
+        const response = await api.get<DecisionCorte>(`/decisiones/ultima/${loteId}`);
         return response.data;
     } catch (error: any) {
         if (error.response?.status === 404) {
@@ -74,21 +59,7 @@ export async function obtenerUltimaDecision(loteId: number): Promise<DecisionCor
  */
 export async function obtenerDecisionesPorLote(loteId: number): Promise<DecisionCorte[]> {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('⚠️ No hay token de autenticación');
-            return [];
-        }
-
-        const response = await axios.get<DecisionesResponse>(
-            `${API_URL}/decisiones/lote/${loteId}`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-        
+        const response = await api.get<DecisionesResponse>(`/decisiones/lote/${loteId}`);
         return response.data.data || [];
     } catch (error: any) {
         console.error('❌ Error obteniendo decisiones del lote:', error);
@@ -101,21 +72,7 @@ export async function obtenerDecisionesPorLote(loteId: number): Promise<Decision
  */
 export async function obtenerDecisionesRecientes(): Promise<DecisionCorte[]> {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('⚠️ No hay token de autenticación');
-            return [];
-        }
-
-        const response = await axios.get<DecisionesResponse>(
-            `${API_URL}/decisiones/recientes`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-        
+        const response = await api.get<DecisionesResponse>('/decisiones/recientes');
         return response.data.data || [];
     } catch (error: any) {
         console.error('❌ Error obteniendo decisiones recientes:', error);
@@ -133,25 +90,12 @@ export async function obtenerResumenDecisiones(): Promise<{
     total: number;
 }> {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            return { verde: 0, amarillo: 0, rojo: 0, total: 0 };
-        }
-
-        const response = await axios.get<{
+        const response = await api.get<{
             verde: number;
             amarillo: number;
             rojo: number;
             total: number;
-        }>(
-            `${API_URL}/decisiones/resumen`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-        
+        }>('/decisiones/resumen');
         return response.data;
     } catch (error: any) {
         console.error('❌ Error obteniendo resumen de decisiones:', error);
