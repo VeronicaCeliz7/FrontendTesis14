@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -33,20 +33,40 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
     const [mediciones, setMediciones] = useState<Medicion[]>([]);
     const [cargando, setCargando] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const mountedRef = useRef(true);
+
+    useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
     useEffect(() => {
         const cargarMediciones = async () => {
-            if (!loteId) return;
+            if (!loteId || loteId === 0) {
+                if (mountedRef.current) {
+                    setCargando(false);
+                    setMediciones([]);
+                }
+                return;
+            }
             try {
                 setCargando(true);
                 const data = await listarMediciones(loteId);
-                setMediciones(data);
-                setError(null);
+                if (mountedRef.current) {
+                    setMediciones(data);
+                    setError(null);
+                }
             } catch (err) {
                 console.error('Error al cargar mediciones:', err);
-                setError('No se pudieron cargar las mediciones');
+                if (mountedRef.current) {
+                    setError('No se pudieron cargar las mediciones');
+                }
             } finally {
-                setCargando(false);
+                if (mountedRef.current) {
+                    setCargando(false);
+                }
             }
         };
 

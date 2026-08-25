@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
+
+.env.production
+
 # Build
 dist/
 dist-ssr/

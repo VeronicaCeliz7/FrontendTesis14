@@ -11,6 +11,9 @@ import AlertasPage from './pages/AlertasPage';
 import TestLogin from './pages/TestLogin';
 import TestPage from './pages/TestLogin';
 import Layout from './components/layout/Layout';
+import { useState } from 'react';
+// ✅ IMPORTAR TOASTER
+import { Toaster } from 'react-hot-toast';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -18,10 +21,47 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  // ✅ Estado para la búsqueda
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // ✅ Función que se pasa al Layout
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    console.log('🔍 Buscando:', query);
+  };
+
   return (
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+          {/* ✅ TOASTER GLOBAL - Disponible en toda la app */}
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 3000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+                padding: '16px',
+                borderRadius: '8px',
+              },
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#22c55e',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
+          
           <Routes>
             {/* Rutas públicas */}
             <Route path="/login" element={<LoginPage />} />
@@ -31,7 +71,7 @@ function App() {
             {/* Rutas protegidas */}
             <Route path="/" element={
               <ProtectedRoute>
-                <Layout>
+                <Layout onSearch={handleSearch}>
                   <DashboardPage />
                 </Layout>
               </ProtectedRoute>
@@ -39,15 +79,15 @@ function App() {
             
             <Route path="/lotes" element={
               <ProtectedRoute>
-                <Layout>
-                  <LotesPage />
+                <Layout onSearch={handleSearch}>
+                  <LotesPage searchQuery={searchQuery} />
                 </Layout>
               </ProtectedRoute>
             } />
             
             <Route path="/labores" element={
               <ProtectedRoute>
-                <Layout>
+                <Layout onSearch={handleSearch}>
                   <LaboresPage />
                 </Layout>
               </ProtectedRoute>
@@ -55,7 +95,7 @@ function App() {
             
             <Route path="/cortes" element={
               <ProtectedRoute>
-                <Layout>
+                <Layout onSearch={handleSearch}>
                   <CortesPage />
                 </Layout>
               </ProtectedRoute>
@@ -63,7 +103,7 @@ function App() {
             
             <Route path="/alertas" element={
               <ProtectedRoute>
-                <Layout>
+                <Layout onSearch={handleSearch}>
                   <AlertasPage />
                 </Layout>
               </ProtectedRoute>

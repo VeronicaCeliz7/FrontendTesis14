@@ -50,4 +50,4 @@ export const eliminarLabor = async (id: number, lote_id: number, token: string) 
     headers: { Authorization: `Bearer ${token}` },
   });
   return response.data;
-};
+};                                                                                                                                           
