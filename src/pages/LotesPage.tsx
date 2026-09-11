@@ -85,7 +85,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
 
   // 🆕 ESTADO PARA REDIBUJO DE POLÍGONO
   const [redibujandoLoteId, setRedibujandoLoteId] = useState<number | null>(null);
-
+  // 🆕 ESTADO PARA EL CLIP PATH DEL NDVI (recorte SVG)
+  const [clipPaths, setClipPaths] = useState<string[]>([]);
   // ============================================
   // REFS
   // ============================================
@@ -124,7 +125,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-    const layer = L.tileLayer.wms(
+        const layer = L.tileLayer.wms(
       `https://sh.dataspace.copernicus.eu/ogc/wms/${COPERNICUS_INSTANCE_ID}`,
       {
         layers: 'NDVI',
@@ -132,17 +133,84 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         transparent: true,
         opacity: 0.6,
         styles: 'green_yellow_red',
+        className: 'ndvi-clip-layer', // 🆕 clase para aplicar el clip-path
         headers: {
           Authorization: `Bearer ${COPERNICUS_TOKEN}`,
         },
-      }
+      } as any
     );
+    
 
     layer.addTo(mapInstanceRef.current);
     setCapaNDVI(layer);
     setMostrarNDVI(true);
     toast.success('🌿 Mapa de calor NDVI activado');
   }, [capaNDVI]);
+
+    // ============================================
+  // 🆕 ACTUALIZAR CLIP PATH DEL NDVI
+  // Genera los paths SVG de los lotes para recortar la capa WMS
+  // ============================================
+  const actualizarClipPath = useCallback(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (!lotes || lotes.length === 0) {
+      setClipPaths([]);
+      return;
+    }
+
+    const paths: string[] = [];
+
+    lotes.forEach((lote) => {
+      try {
+        if (!lote.poligono_geojson?.coordinates) return;
+
+        const geojson = typeof lote.poligono_geojson === 'string'
+          ? JSON.parse(lote.poligono_geojson)
+          : lote.poligono_geojson;
+
+        const coords = geojson.coordinates[0];
+        if (!coords || coords.length === 0) return;
+
+        // Convertir cada coordenada [lng, lat] a punto del SVG
+        const pathParts = coords.map((p: number[], i: number) => {
+          const point = map.latLngToLayerPoint([p[1], p[0]]);
+          return `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
+        });
+
+        paths.push(pathParts.join(' ') + ' Z');
+      } catch (err) {
+        console.warn('Error generando clip path para lote', lote?.id, err);
+      }
+    });
+
+    setClipPaths(paths);
+  }, [lotes]);
+
+  // 🆕 Actualizar clip path cuando cambian los lotes
+  useEffect(() => {
+    if (!mapaListo) return;
+    actualizarClipPath();
+  }, [lotes, mapaListo, actualizarClipPath]);
+
+  // 🆕 Actualizar clip path cuando el mapa se mueve o hace zoom
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const handleMove = () => {
+      actualizarClipPath();
+    };
+
+    map.on('moveend', handleMove);
+    map.on('zoomend', handleMove);
+
+    return () => {
+      map.off('moveend', handleMove);
+      map.off('zoomend', handleMove);
+    };
+  }, [actualizarClipPath]);
 
   // ============================================
   // INICIALIZAR MAPA
@@ -833,9 +901,31 @@ useEffect(() => {
   // ============================================
   // RENDER
   // ============================================
-  return (
+   return (
     <div className="space-y-4">
+      {/* 🆕 SVG OCULTO CON LOS PATHS DE RECORTE DEL NDVI */}
+      <svg
+        style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}
+        aria-hidden="true"
+      >
+        <defs>
+          <clipPath id="ndvi-clip-path" clipPathUnits="userSpaceOnUse">
+            {clipPaths.map((path, i) => (
+              <path key={i} d={path} />
+            ))}
+          </clipPath>
+        </defs>
+      </svg>
+
+      {/* 🆕 ESTILO PARA APLICAR EL CLIP A LA CAPA NDVI */}
+      <style>{`
+        .ndvi-clip-layer {
+          clip-path: url(#ndvi-clip-path);
+        }
+      `}</style>
+
       {/* Título y botones */}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
