@@ -83,6 +83,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const [mostrarNDVI, setMostrarNDVI] = useState(false);
   const [capaNDVI, setCapaNDVI] = useState<L.Layer | null>(null);
 
+  // 🆕 ESTADO PARA REDIBUJO DE POLÍGONO
+  const [redibujandoLoteId, setRedibujandoLoteId] = useState<number | null>(null);
+
   // ============================================
   // REFS
   // ============================================
@@ -97,6 +100,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const mountedRef = useRef(true);
   const decisionesRef = useRef<Map<number, DecisionCorte>>(new Map());
   const mapInitRef = useRef(false);
+
+  // 🆕 REF PARA EL POLÍGONO DE REFERENCIA (gris punteado)
+  const poligonoReferenciaRef = useRef<L.Polygon | null>(null);
 
   // ============================================
   // FUNCIÓN PARA COPERNICUS NDVI
@@ -559,12 +565,117 @@ useEffect(() => {
     setModoDibujo(true);
   };
 
+  // 🆕 ACTIVAR REDIBUJO DE UN LOTE EXISTENTE
+  const activarRedibujo = (lote: any) => {
+    if (!mapInstanceRef.current) return;
+
+    // Cerrar el modal de edición
+    setMostrarModalEdicion(false);
+
+    // Limpiar cualquier dibujo previo
+    limpiarMarcadoresDibujo();
+    puntosRef.current = [];
+    setPuntos([]);
+
+    // Mostrar el polígono viejo como referencia (gris punteado)
+    try {
+      const geojson = typeof lote.poligono_geojson === 'string'
+        ? JSON.parse(lote.poligono_geojson)
+        : lote.poligono_geojson;
+      const coords = geojson.coordinates[0].map((p: number[]) => [p[1], p[0]]);
+
+      // Borrar referencia anterior si existía
+      if (poligonoReferenciaRef.current) {
+        try { mapInstanceRef.current.removeLayer(poligonoReferenciaRef.current); } catch (e) {}
+      }
+
+      poligonoReferenciaRef.current = L.polygon(coords as any, {
+        color: '#6b7280',
+        weight: 2,
+        dashArray: '8,8',
+        fillColor: '#9ca3af',
+        fillOpacity: 0.15,
+        interactive: false,
+      }).addTo(mapInstanceRef.current);
+
+      // Hacer zoom al polígono viejo
+      const bounds = poligonoReferenciaRef.current.getBounds();
+      mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
+
+    } catch (err) {
+      console.error('Error mostrando referencia:', err);
+    }
+
+    // Activar modo dibujo
+    setRedibujandoLoteId(lote.id);
+    modoDibujoRef.current = true;
+    setModoDibujo(true);
+
+    toast('🔄 Modo redibujo activado. Marcá los nuevos vértices.', { icon: '✏️' });
+  };
+
   const terminarDibujo = async () => {
     if (puntosRef.current.length < 3) {
       toast.error(`Marcá al menos 3 puntos (actual: ${puntosRef.current.length})`);
       return;
     }
 
+    // 🆕 SI ESTAMOS REDIBUJANDO → guardar directo sin pedir nombre
+    if (redibujandoLoteId) {
+      const loteOriginal = lotes.find(l => l.id === redibujandoLoteId);
+      if (!loteOriginal) {
+        toast.error('No se encontró el lote a redibujar');
+        return;
+      }
+
+      const polygonCoords = [...puntosRef.current, puntosRef.current[0]];
+      const polygonGeoJSON = { type: 'Polygon' as const, coordinates: [polygonCoords] };
+      const areaMetros = turf.area(polygonGeoJSON);
+      const areaHectareas = areaMetros / 10000;
+
+      try {
+        setIsUpdating(true);
+
+        await actualizarLote(redibujandoLoteId, {
+          nombre: loteOriginal.nombre,
+          hectareas: areaHectareas,
+          poligono_geojson: polygonGeoJSON,
+          campo_id: campoSeleccionado?.id,
+        });
+
+        if (!mountedRef.current) return;
+
+        // Limpiar todo
+              
+        limpiarMarcadoresDibujo();
+        if (poligonoReferenciaRef.current) {
+          try { mapInstanceRef.current?.removeLayer(poligonoReferenciaRef.current); } catch (e) {}
+          poligonoReferenciaRef.current = null;
+        }
+        puntosRef.current = [];
+        setPuntos([]);
+        modoDibujoRef.current = false;
+        setModoDibujo(false);
+        setRedibujandoLoteId(null);
+
+        // ✅ Diferir la recarga (misma razón que arriba)
+        setTimeout(async () => {
+          if (mountedRef.current && campoSeleccionado) {
+            await cargarLotesDelCampo(campoSeleccionado);
+          }
+        }, 50);
+        toast.success(`✅ Polígono del lote "${loteOriginal.nombre}" actualizado (${areaHectareas.toFixed(2)} ha)`);
+
+      } catch (error: any) {
+        console.error('Error actualizando polígono:', error);
+        toast.error(error?.response?.data?.error || 'Error al actualizar el polígono');
+      } finally {
+        if (mountedRef.current) setIsUpdating(false);
+      }
+      return;
+    }
+
+    // 🔽 FLUJO ORIGINAL DE "CREAR NUEVO LOTE" (sin cambios)
     const nombre = window.prompt('📝 Ingresá el nombre del lote:', 'Lote Nuevo');
     if (!nombre || !nombre.trim()) {
       toast.error('El nombre es obligatorio');
@@ -600,10 +711,18 @@ useEffect(() => {
 
   const cancelarDibujo = () => {
     limpiarMarcadoresDibujo();
+
+    // 🆕 Limpiar polígono de referencia si estamos redibujando
+    if (poligonoReferenciaRef.current) {
+      try { mapInstanceRef.current?.removeLayer(poligonoReferenciaRef.current); } catch (e) {}
+      poligonoReferenciaRef.current = null;
+    }
+
     puntosRef.current = [];
     setPuntos([]);
     modoDibujoRef.current = false;
     setModoDibujo(false);
+    setRedibujandoLoteId(null);  // 🆕
   };
 
   // ============================================
@@ -641,15 +760,19 @@ useEffect(() => {
 
       if (!mountedRef.current) return;
 
-      setMostrarModalEdicion(false);
+            setMostrarModalEdicion(false);
       setLoteEditando(null);
-      await cargarLotesDelCampo(campoSeleccionado);
 
       toast.success('✅ Lote actualizado correctamente');
 
-      setTimeout(() => {
-        try { mapInstanceRef.current?.invalidateSize(); } catch (e) {}
-      }, 200);
+      // ✅ Diferir la recarga para que React termine de desmontar el modal
+      // Evita el error "removeChild" por conflicto React ↔ Leaflet
+      setTimeout(async () => {
+        if (mountedRef.current && campoSeleccionado) {
+          await cargarLotesDelCampo(campoSeleccionado);
+          try { mapInstanceRef.current?.invalidateSize(); } catch (e) {}
+        }
+      }, 50);
 
     } catch (error: any) {
       console.error('Error al actualizar:', error);
@@ -821,8 +944,15 @@ useEffect(() => {
 
       {/* MODO DIBUJO */}
       {modoDibujo && (
-        <div className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 p-3 text-center text-sm rounded-lg">
-          ✏️ Modo dibujo: hacé clic en el mapa ({puntos.length} puntos)
+        <div className={`p-3 text-center text-sm rounded-lg ${
+          redibujandoLoteId
+            ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+            : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200'
+        }`}>
+          {redibujandoLoteId
+            ? `🔄 Redibujando "${lotes.find(l => l.id === redibujandoLoteId)?.nombre}" — el polígono actual se muestra en gris punteado. Hacé clic para los nuevos vértices (${puntos.length} puntos)`
+            : `✏️ Modo dibujo: hacé clic en el mapa (${puntos.length} puntos)`
+          }
         </div>
       )}
 
@@ -956,6 +1086,20 @@ useEffect(() => {
                   disabled
                   className="w-full px-3 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
                 />
+              </div>
+
+              {/* 🆕 BOTÓN REDIBUJAR POLÍGONO */}
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
+                <p className="text-xs text-blue-800 dark:text-blue-200 mb-2">
+                  💡 ¿El polígono está mal dibujado? Podés redibujarlo manteniendo el mismo lote y su historial.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => activarRedibujo(loteEditando)}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors text-sm font-medium"
+                >
+                  🔄 Redibujar Polígono
+                </button>
               </div>
 
               <div className="flex justify-end gap-2 mt-4">
