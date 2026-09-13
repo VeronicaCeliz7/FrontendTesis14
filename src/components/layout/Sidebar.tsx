@@ -27,7 +27,7 @@ export function Sidebar() {
           <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
             Sistema de gestión
           </span>
-        </div>
+        </div>-
       </div>
 
       {/* Menú - ocupa todo el espacio disponible */}
