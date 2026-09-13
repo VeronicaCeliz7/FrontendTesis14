@@ -39,7 +39,6 @@ const formatearNDVI = (ndvi: any): string => {
   return isNaN(num) ? 'N/A' : num.toFixed(3);
 };
 
-
 // =============================================
 // INTERFACE
 // =============================================
@@ -82,6 +81,11 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const [redibujandoLoteId, setRedibujandoLoteId] = useState<number | null>(null);
   // 🆕 ESTADO PARA EL CLIP PATH DEL NDVI (recorte SVG)
   const [clipPaths, setClipPaths] = useState<string[]>([]);
+
+  // 🆕 ESTADOS PARA MODAL DE NOMBRE DE NUEVO LOTE
+  const [mostrarModalNombre, setMostrarModalNombre] = useState(false);
+  const [nombreNuevoLote, setNombreNuevoLote] = useState('');
+
   // ============================================
   // REFS
   // ============================================
@@ -120,7 +124,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-        const layer = L.tileLayer.wms(
+    const layer = L.tileLayer.wms(
       `https://sh.dataspace.copernicus.eu/ogc/wms/${COPERNICUS_INSTANCE_ID}`,
       {
         layers: 'NDVI',
@@ -128,13 +132,12 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         transparent: true,
         opacity: 0.6,
         styles: 'green_yellow_red',
-        className: 'ndvi-clip-layer', // 🆕 clase para aplicar el clip-path
+        className: 'ndvi-clip-layer',
         headers: {
           Authorization: `Bearer ${COPERNICUS_TOKEN}`,
         },
       } as any
     );
-    
 
     layer.addTo(mapInstanceRef.current);
     setCapaNDVI(layer);
@@ -142,9 +145,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     toast.success('🌿 Mapa de calor NDVI activado');
   }, [capaNDVI]);
 
-    // ============================================
+  // ============================================
   // 🆕 ACTUALIZAR CLIP PATH DEL NDVI
-  // Genera los paths SVG de los lotes para recortar la capa WMS
   // ============================================
   const actualizarClipPath = useCallback(() => {
     const map = mapInstanceRef.current;
@@ -168,7 +170,6 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         const coords = geojson.coordinates[0];
         if (!coords || coords.length === 0) return;
 
-        // Convertir cada coordenada [lng, lat] a punto del SVG
         const pathParts = coords.map((p: number[], i: number) => {
           const point = map.latLngToLayerPoint([p[1], p[0]]);
           return `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
@@ -183,13 +184,11 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     setClipPaths(paths);
   }, [lotes]);
 
-  // 🆕 Actualizar clip path cuando cambian los lotes
   useEffect(() => {
     if (!mapaListo) return;
     actualizarClipPath();
   }, [lotes, mapaListo, actualizarClipPath]);
 
-  // 🆕 Actualizar clip path cuando el mapa se mueve o hace zoom
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -467,55 +466,51 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     cargarLotesDelCampo(campoSeleccionado);
   }, [campoSeleccionado]);
 
-  
-  
   // ============================================
+  // ✅ EFECTO 2: ZOOM AL CAMPO
   // ============================================
-// ✅ EFECTO 2: ZOOM AL CAMPO (calculando centro desde TODOS los lotes)
-// ============================================
-useEffect(() => {
-  if (!campoSeleccionado || !mapInstanceRef.current) return;
-  if (lotes.length === 0) return;
+  useEffect(() => {
+    if (!campoSeleccionado || !mapInstanceRef.current) return;
+    if (lotes.length === 0) return;
 
-  console.log('📍 Haciendo zoom a:', campoSeleccionado.nombre, 'con', lotes.length, 'lotes');
+    console.log('📍 Haciendo zoom a:', campoSeleccionado.nombre, 'con', lotes.length, 'lotes');
 
-  // ✅ Calcular centro desde TODOS los lotes
-  try {
-    let latSum = 0, lngSum = 0, count = 0;
-    
-    lotes.forEach((lote) => {
-      if (lote.poligono_geojson?.coordinates) {
-        const geojson = typeof lote.poligono_geojson === 'string'
-          ? JSON.parse(lote.poligono_geojson)
-          : lote.poligono_geojson;
-        const coords = geojson.coordinates[0];
-        if (coords && coords.length > 0) {
-          coords.forEach((p: number[]) => {
-            if (p && p.length === 2) {
-              lngSum += p[0];
-              latSum += p[1];
-              count++;
-            }
-          });
+    try {
+      let latSum = 0, lngSum = 0, count = 0;
+      
+      lotes.forEach((lote) => {
+        if (lote.poligono_geojson?.coordinates) {
+          const geojson = typeof lote.poligono_geojson === 'string'
+            ? JSON.parse(lote.poligono_geojson)
+            : lote.poligono_geojson;
+          const coords = geojson.coordinates[0];
+          if (coords && coords.length > 0) {
+            coords.forEach((p: number[]) => {
+              if (p && p.length === 2) {
+                lngSum += p[0];
+                latSum += p[1];
+                count++;
+              }
+            });
+          }
         }
-      }
-    });
+      });
 
-    if (count > 0) {
-      const centerLat = latSum / count;
-      const centerLng = lngSum / count;
-      console.log('📍 Centro calculado desde TODOS los lotes:', centerLat, centerLng);
-      mapInstanceRef.current.flyTo([centerLat, centerLng], 13);
-    } else {
-      // ⚠️ Si no hay lotes con coordenadas, usar James Craik
-      console.warn('⚠️ No hay lotes con coordenadas, usando James Craik');
+      if (count > 0) {
+        const centerLat = latSum / count;
+        const centerLng = lngSum / count;
+        console.log('📍 Centro calculado desde TODOS los lotes:', centerLat, centerLng);
+        mapInstanceRef.current.flyTo([centerLat, centerLng], 13);
+      } else {
+        console.warn('⚠️ No hay lotes con coordenadas, usando James Craik');
+        mapInstanceRef.current.flyTo([-32.1612, -63.4616], 13);
+      }
+    } catch (e) {
+      console.warn('Error calculando centro:', e);
       mapInstanceRef.current.flyTo([-32.1612, -63.4616], 13);
     }
-  } catch (e) {
-    console.warn('Error calculando centro:', e);
-    mapInstanceRef.current.flyTo([-32.1612, -63.4616], 13);
-  }
-}, [lotes, campoSeleccionado]);
+  }, [lotes, campoSeleccionado]);
+
   // ============================================
   // REDIBUJAR CUANDO CAMBIAN LOS LOTES
   // ============================================
@@ -552,7 +547,7 @@ useEffect(() => {
   }, [searchQuery, campos, lotes, campoSeleccionado]);
 
   // ============================================
-  // ZOOM AL LOTE (al hacer clic en la lista o el popup)
+  // ZOOM AL LOTE
   // ============================================
   useEffect(() => {
     if (!loteSeleccionadoId || !mapInstanceRef.current || lotes.length === 0) return;
@@ -632,22 +627,17 @@ useEffect(() => {
   const activarRedibujo = (lote: any) => {
     if (!mapInstanceRef.current) return;
 
-    // Cerrar el modal de edición
     setMostrarModalEdicion(false);
-
-    // Limpiar cualquier dibujo previo
     limpiarMarcadoresDibujo();
     puntosRef.current = [];
     setPuntos([]);
 
-    // Mostrar el polígono viejo como referencia (gris punteado)
     try {
       const geojson = typeof lote.poligono_geojson === 'string'
         ? JSON.parse(lote.poligono_geojson)
         : lote.poligono_geojson;
       const coords = geojson.coordinates[0].map((p: number[]) => [p[1], p[0]]);
 
-      // Borrar referencia anterior si existía
       if (poligonoReferenciaRef.current) {
         try { mapInstanceRef.current.removeLayer(poligonoReferenciaRef.current); } catch (e) {}
       }
@@ -661,7 +651,6 @@ useEffect(() => {
         interactive: false,
       }).addTo(mapInstanceRef.current);
 
-      // Hacer zoom al polígono viejo
       const bounds = poligonoReferenciaRef.current.getBounds();
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
 
@@ -669,7 +658,6 @@ useEffect(() => {
       console.error('Error mostrando referencia:', err);
     }
 
-    // Activar modo dibujo
     setRedibujandoLoteId(lote.id);
     modoDibujoRef.current = true;
     setModoDibujo(true);
@@ -699,7 +687,7 @@ useEffect(() => {
       try {
         setIsUpdating(true);
 
-               await actualizarLote(redibujandoLoteId, {
+        await actualizarLote(redibujandoLoteId, {
           nombre: loteOriginal.nombre,
           hectareas: areaHectareas,
           poligono_geojson: polygonGeoJSON,
@@ -708,8 +696,6 @@ useEffect(() => {
 
         if (!mountedRef.current) return;
 
-        // Limpiar todo
-              
         limpiarMarcadoresDibujo();
         if (poligonoReferenciaRef.current) {
           try { mapInstanceRef.current?.removeLayer(poligonoReferenciaRef.current); } catch (e) {}
@@ -721,7 +707,6 @@ useEffect(() => {
         setModoDibujo(false);
         setRedibujandoLoteId(null);
 
-        // ✅ Diferir la recarga (misma razón que arriba)
         setTimeout(async () => {
           if (mountedRef.current && campoSeleccionado) {
             await cargarLotesDelCampo(campoSeleccionado);
@@ -738,44 +723,20 @@ useEffect(() => {
       return;
     }
 
-    // 🔽 FLUJO ORIGINAL DE "CREAR NUEVO LOTE" (sin cambios)
-    const nombre = window.prompt('📝 Ingresá el nombre del lote:', 'Lote Nuevo');
-    if (!nombre || !nombre.trim()) {
-      toast.error('El nombre es obligatorio');
-      return;
-    }
-
+    // 🔽 FLUJO ORIGINAL DE "CREAR NUEVO LOTE"
     if (!campoSeleccionado) {
       toast.error('No hay campo seleccionado');
       return;
     }
 
-    const polygonCoords = [...puntosRef.current, puntosRef.current[0]];
-    const polygonGeoJSON = { type: 'Polygon' as const, coordinates: [polygonCoords] };
-    const areaMetros = turf.area(polygonGeoJSON);
-    const areaHectareas = areaMetros / 10000;
-
-    try {
-      await crearLote(nombre.trim(), polygonGeoJSON, areaHectareas, campoSeleccionado.id);
-      if (!mountedRef.current) return;
-
-      limpiarMarcadoresDibujo();
-      puntosRef.current = [];
-      setPuntos([]);
-      modoDibujoRef.current = false;
-      setModoDibujo(false);
-      await cargarLotesDelCampo(campoSeleccionado);
-      toast.success(`✅ Lote "${nombre}" guardado`);
-    } catch (error) {
-      console.error('Error guardando lote:', error);
-      toast.error('Error al guardar');
-    }
+    // 🆕 Abrir modal para pedir el nombre (reemplaza window.prompt)
+    setNombreNuevoLote('');
+    setMostrarModalNombre(true);
   };
 
   const cancelarDibujo = () => {
     limpiarMarcadoresDibujo();
 
-    // 🆕 Limpiar polígono de referencia si estamos redibujando
     if (poligonoReferenciaRef.current) {
       try { mapInstanceRef.current?.removeLayer(poligonoReferenciaRef.current); } catch (e) {}
       poligonoReferenciaRef.current = null;
@@ -785,7 +746,59 @@ useEffect(() => {
     setPuntos([]);
     modoDibujoRef.current = false;
     setModoDibujo(false);
-    setRedibujandoLoteId(null);  // 🆕
+    setRedibujandoLoteId(null);
+  };
+
+  // 🆕 NUEVA FUNCIÓN: Guardar lote nuevo (llamada desde el modal)
+  const handleGuardarNuevoLote = async () => {
+    if (!nombreNuevoLote.trim()) {
+      toast.error('El nombre es obligatorio');
+      return;
+    }
+
+    if (!campoSeleccionado) {
+      toast.error('No hay campo seleccionado');
+      return;
+    }
+
+    if (puntosRef.current.length < 3) {
+      toast.error('Marcá al menos 3 puntos');
+      return;
+    }
+
+    const polygonCoords = [...puntosRef.current, puntosRef.current[0]];
+    const polygonGeoJSON = { type: 'Polygon' as const, coordinates: [polygonCoords] };
+    const areaMetros = turf.area(polygonGeoJSON);
+    const areaHectareas = areaMetros / 10000;
+
+    try {
+      setIsUpdating(true);
+
+      await crearLote(nombreNuevoLote.trim(), polygonGeoJSON, areaHectareas, campoSeleccionado.id);
+      if (!mountedRef.current) return;
+
+      setMostrarModalNombre(false);
+      setNombreNuevoLote('');
+      limpiarMarcadoresDibujo();
+      puntosRef.current = [];
+      setPuntos([]);
+      modoDibujoRef.current = false;
+      setModoDibujo(false);
+
+      await cargarLotesDelCampo(campoSeleccionado);
+      toast.success(`✅ Lote "${nombreNuevoLote}" guardado`);
+    } catch (error) {
+      console.error('Error guardando lote:', error);
+      toast.error('Error al guardar');
+    } finally {
+      if (mountedRef.current) setIsUpdating(false);
+    }
+  };
+
+  // 🆕 Cancelar el modal de nombre
+  const handleCancelarModalNombre = () => {
+    setMostrarModalNombre(false);
+    setNombreNuevoLote('');
   };
 
   // ============================================
@@ -823,13 +836,11 @@ useEffect(() => {
 
       if (!mountedRef.current) return;
 
-            setMostrarModalEdicion(false);
+      setMostrarModalEdicion(false);
       setLoteEditando(null);
 
       toast.success('✅ Lote actualizado correctamente');
 
-      // ✅ Diferir la recarga para que React termine de desmontar el modal
-      // Evita el error "removeChild" por conflicto React ↔ Leaflet
       setTimeout(async () => {
         if (mountedRef.current && campoSeleccionado) {
           await cargarLotesDelCampo(campoSeleccionado);
@@ -896,7 +907,7 @@ useEffect(() => {
   // ============================================
   // RENDER
   // ============================================
-   return (
+  return (
     <div className="space-y-4">
       {/* 🆕 SVG OCULTO CON LOS PATHS DE RECORTE DEL NDVI */}
       <svg
@@ -920,7 +931,6 @@ useEffect(() => {
       `}</style>
 
       {/* Título y botones */}
-
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 dark:text-white">
@@ -1014,7 +1024,6 @@ useEffect(() => {
           </div>
         )}
         
-        {/* ✅ BOTÓN PARA MAPA DE CALOR NDVI */}
         <button
           onClick={toggleCapaNDVI}
           className={`absolute bottom-4 left-4 z-[1000] px-4 py-2 rounded-lg shadow-lg text-sm font-medium transition-colors ${
@@ -1041,7 +1050,7 @@ useEffect(() => {
         </div>
       )}
 
-      {/* GRÁFICO NDVI - CON DIV KEY PARA FORZAR REMONTAJE LIMPIO */}
+      {/* GRÁFICO NDVI */}
       <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-4">
         {loteSeleccionadoId ? (
           <div key={`grafico-wrapper-${loteSeleccionadoId}`}>
@@ -1173,7 +1182,6 @@ useEffect(() => {
                 />
               </div>
 
-              {/* 🆕 BOTÓN REDIBUJAR POLÍGONO */}
               <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md border border-blue-200 dark:border-blue-800">
                 <p className="text-xs text-blue-800 dark:text-blue-200 mb-2">
                   💡 ¿El polígono está mal dibujado? Podés redibujarlo manteniendo el mismo lote y su historial.
@@ -1209,6 +1217,49 @@ useEffect(() => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🆕 MODAL DE NOMBRE DE NUEVO LOTE */}
+      {mostrarModalNombre && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-xl">
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">📝 Nombrar el lote</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Ingresá un nombre para el nuevo lote
+            </p>
+            <input
+              type="text"
+              value={nombreNuevoLote}
+              onChange={(e) => setNombreNuevoLote(e.target.value)}
+              placeholder="Ej: Potrero Norte"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleGuardarNuevoLote();
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-4"
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCancelarModalNombre}
+                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleGuardarNuevoLote}
+                disabled={isUpdating || !nombreNuevoLote.trim()}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
+              >
+                {isUpdating ? '⏳ Guardando...' : '💾 Guardar Lote'}
+              </button>
+            </div>
           </div>
         </div>
       )}
