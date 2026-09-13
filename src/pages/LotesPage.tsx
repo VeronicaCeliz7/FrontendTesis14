@@ -39,11 +39,6 @@ const formatearNDVI = (ndvi: any): string => {
   return isNaN(num) ? 'N/A' : num.toFixed(3);
 };
 
-const formatearRadiacion = (radiacion: any): string | null => {
-  if (radiacion === null || radiacion === undefined) return null;
-  const num = typeof radiacion === 'number' ? radiacion : parseFloat(radiacion);
-  return isNaN(num) ? null : `${num.toFixed(1)} MJ/m²`;
-};
 
 // =============================================
 // INTERFACE
@@ -115,7 +110,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       mapInstanceRef.current.removeLayer(capaNDVI);
       setCapaNDVI(null);
       setMostrarNDVI(false);
-      toast.info('🌿 Mapa de calor NDVI desactivado');
+      toast('🌿 Mapa de calor NDVI desactivado', { icon: 'ℹ️' });
       return;
     }
 
@@ -704,11 +699,11 @@ useEffect(() => {
       try {
         setIsUpdating(true);
 
-        await actualizarLote(redibujandoLoteId, {
+               await actualizarLote(redibujandoLoteId, {
           nombre: loteOriginal.nombre,
           hectareas: areaHectareas,
           poligono_geojson: polygonGeoJSON,
-          campo_id: campoSeleccionado?.id,
+          campo_id: campoSeleccionado?.id!,
         });
 
         if (!mountedRef.current) return;

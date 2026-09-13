@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { listarCampos, crearCampo, eliminarCampo, Campo } from '../../services/campos.service';
-import { useAuth } from '../../hooks/useAuth';
+
 
 interface CampoFormProps {
   onCampoSeleccionado: (campo: Campo | null) => void;
@@ -14,11 +14,13 @@ const CampoForm = ({ onCampoSeleccionado, campoSeleccionadoId, mapaCentro }: Cam
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevaUbicacion, setNuevaUbicacion] = useState('');
   const [cargando, setCargando] = useState(false);
-  const { token } = useAuth();
+  
 
   const cargarCampos = async () => {
     try {
-      const data = await listarCampos(token!);
+      const data = await listarCampos();
+      
+
       setCampos(data);
     } catch (error) {
       console.error('Error al cargar campos:', error);
@@ -39,13 +41,13 @@ const CampoForm = ({ onCampoSeleccionado, campoSeleccionadoId, mapaCentro }: Cam
     
     setCargando(true);
     try {
-      const campo = await crearCampo(token!, {
-        nombre: nuevoNombre,
-        ubicacion: nuevaUbicacion,
-        latitud_centro: mapaCentro?.lat || -32.1612,
-        longitud_centro: mapaCentro?.lng || -63.4616
-      });
-      
+      const campo = await crearCampo({
+  nombre: nuevoNombre,
+  ubicacion: nuevaUbicacion,
+  latitud_centro: mapaCentro?.lat || -32.1612,
+  longitud_centro: mapaCentro?.lng || -63.4616
+});
+
       console.log('✅ Campo creado:', campo);
       setCampos([...campos, campo]);
       setMostrarFormulario(false);
@@ -63,7 +65,7 @@ const CampoForm = ({ onCampoSeleccionado, campoSeleccionadoId, mapaCentro }: Cam
   const handleEliminarCampo = async (id: number) => {
     if (confirm('¿Eliminar este campo?')) {
       try {
-        await eliminarCampo(token!, id);
+        await eliminarCampo(id);
         setCampos(campos.filter(c => c.id !== id));
         if (campoSeleccionadoId === id) {
           onCampoSeleccionado(null);

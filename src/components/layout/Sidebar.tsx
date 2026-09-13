@@ -34,28 +34,32 @@ export function Sidebar() {
       <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
         {navItems.map((item) => (
           <NavLink
-            key={item.path}
-            to={item.path}
-            className={({ isActive }) =>
-              cn(
-                "flex items-center gap-4 rounded-xl px-5 py-4 text-base font-semibold transition-all duration-200",
-                isActive
-                  ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 text-gray-900 dark:text-white shadow-sm border border-green-200/50 dark:border-green-800/30"
-                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white"
-              )
-            }
-          >
-            <item.icon className={cn(
-              "h-6 w-6 transition-colors stroke-[2.5]",
-              ({ isActive }) => isActive ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"
-            )} />
-            <span className="text-base font-semibold">{item.label}</span>
-            {item.badge && (
-              <Badge className="ml-auto bg-red-500 hover:bg-red-600 text-white border-0 px-3 py-1 text-sm font-bold">
-                {item.badge}
-              </Badge>
-            )}
-          </NavLink>
+  key={item.path}
+  to={item.path}
+  className={({ isActive }) =>
+    cn(
+      "flex items-center gap-4 rounded-xl px-5 py-4 text-base font-semibold transition-all duration-200",
+      isActive
+        ? "bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/40 dark:to-emerald-950/40 text-gray-900 dark:text-white shadow-sm border border-green-200/50 dark:border-green-800/30"
+        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 hover:text-gray-900 dark:hover:text-white"
+    )
+  }
+>
+  {({ isActive }) => (
+    <>
+      <item.icon className={cn(
+        "h-6 w-6 transition-colors stroke-[2.5]",
+        isActive ? "text-green-600 dark:text-green-400" : "text-gray-500 dark:text-gray-400"
+      )} />
+      <span className="text-base font-semibold">{item.label}</span>
+      {item.badge && (
+        <Badge className="ml-auto bg-red-500 hover:bg-red-600 text-white border-0 px-3 py-1 text-sm font-bold">
+          {item.badge}
+        </Badge>
+      )}
+    </>
+  )}
+</NavLink>
         ))}
       </nav>
     </aside>

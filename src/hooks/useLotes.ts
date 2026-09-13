@@ -1,10 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listarLotes, crearLote, actualizarLote, eliminarLote } from '../services/lotes.service';
-import { useAuth } from './useAuth';
 
 export const useLotes = () => {
   const queryClient = useQueryClient();
-  const { token } = useAuth();
 
   // =============================================
   // Query para obtener lotes
@@ -15,38 +13,37 @@ export const useLotes = () => {
     error,
   } = useQuery({
     queryKey: ['lotes'],
-    queryFn: () => listarLotes(token!),
-    enabled: !!token,
+    queryFn: () => listarLotes(),
   });
 
   // =============================================
   // Mutación para CREAR lote
   // =============================================
   const { mutate: agregarLote, isPending: creando } = useMutation({
-    mutationFn: (nuevoLote: { nombre: string; poligono: any; hectareas: number }) =>
-      crearLote(nuevoLote.nombre, nuevoLote.poligono, nuevoLote.hectareas, token!),
+    mutationFn: (nuevoLote: { nombre: string; poligono: any; hectareas: number; campo_id: number }) =>
+      crearLote(nuevoLote.nombre, nuevoLote.poligono, nuevoLote.hectareas, nuevoLote.campo_id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lotes'] });
     },
   });
 
   // =============================================
-  // 🆕 Mutación para ACTUALIZAR lote
+  // Mutación para ACTUALIZAR lote
   // =============================================
   const { mutate: actualizarLoteMutacion, isPending: actualizando } = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { nombre?: string; hectareas?: number; poligono?: any } }) =>
-      actualizarLote(id, data, token!),
+    mutationFn: ({ id, data }: { id: number; data: { nombre?: string; hectareas?: number; poligono?: any; campo_id: number } }) =>
+      actualizarLote(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lotes'] });
     },
   });
 
   // =============================================
-  // 🆕 Mutación para ELIMINAR lote
+  // Mutación para ELIMINAR lote
   // =============================================
   const { mutate: eliminarLoteMutacion, isPending: eliminando } = useMutation({
     mutationFn: ({ id, campoId }: { id: number; campoId: number }) =>
-      eliminarLote(id, campoId, token!),
+      eliminarLote(id, campoId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['lotes'] });
     },
@@ -58,9 +55,9 @@ export const useLotes = () => {
     error,
     agregarLote,
     creando,
-    actualizarLote: actualizarLoteMutacion,  // 👈 Exportar
+    actualizarLote: actualizarLoteMutacion,
     actualizando,
-    eliminarLote: eliminarLoteMutacion,      // 👈 Exportar
+    eliminarLote: eliminarLoteMutacion,
     eliminando,
   };
 };

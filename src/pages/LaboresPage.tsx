@@ -31,7 +31,8 @@ const LaboresPage = () => {
   const { token } = useAuth();
 
   const cargarLotes = async () => {
-    const data = await listarLotes(token!);
+    
+        const data = await listarLotes();
     setLotes(data);
     if (data.length > 0) setLoteSeleccionadoId(data[0].id);
   };
@@ -150,7 +151,7 @@ const LaboresPage = () => {
       )}
 
       {/* Modal con selector de lote y formulario */}
-      <LaborFormModal
+            <LaborFormModal
         isOpen={modalAbierto}
         onClose={() => setModalAbierto(false)}
         onSuccess={() => {
@@ -158,7 +159,6 @@ const LaboresPage = () => {
           if (loteSeleccionadoId) cargarLabores(loteSeleccionadoId);
         }}
         lotes={lotes}
-        token={token!}
       />
     </div>
   );

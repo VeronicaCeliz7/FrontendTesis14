@@ -1,31 +1,15 @@
 // TesisFrontend/src/services/decisiones.service.ts
 import api from '../lib/axios';
+import type { DecisionCorte } from '../types/DecisionCorte';
+export type { DecisionCorte };
 
 // =============================================
 // CONFIGURACIÓN BASE
 // =============================================
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/internal';
+//const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/internal';
 
-// =============================================
-// TIPOS / INTERFACES
-// =============================================
-export interface DecisionCorte {
-    id: number;
-    lote_id: number;
-    fecha_analisis: string;
-    ndvi_actual: number;
-    ndvi_hace_7_dias: number;
-    pendiente_ndvi: number;
-    semaforo: '🟢 Corte' | '🟡 Esperar' | '🔴 Riesgo';
-    motivo: string;
-    recomendacion: string;
-    radiacion_mj_m2: number;
-    lluvia_prox_48h: number;
-    lluvia_prox_72h: number;
-    temp_max_prox_3d: number;
-    created_at: string;
-    updated_at: string;
-}
+
+
 
 export interface DecisionesResponse {
     success: boolean;

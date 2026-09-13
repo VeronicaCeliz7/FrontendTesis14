@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import DrawingMap from '../common/DrawingMap';
 import { crearLote, listarLotesPorCampo } from '../../services/lotes.service';
-import { useAuth } from '../../hooks/useAuth';
 import CampoForm from './CampoForm';
 import { Campo } from '../../services/campos.service';
 
@@ -16,7 +15,7 @@ const LoteForm = ({ onSuccess, onCancel }: LoteFormProps) => {
   const [hectareas, setHectareas] = useState(0);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
-  const { token } = useAuth();
+  
 
   const [campoSeleccionado, setCampoSeleccionado] = useState<Campo | null>(null);
   const [paso, setPaso] = useState<'campo' | 'lote'>('campo');
@@ -26,11 +25,12 @@ const LoteForm = ({ onSuccess, onCancel }: LoteFormProps) => {
   const [lotesGuardados, setLotesGuardados] = useState<any[]>([]);
 
   // ✅ Cargar lotes cuando se selecciona un campo
+   // ✅ Cargar lotes cuando se selecciona un campo
   useEffect(() => {
     const cargarLotesDelCampo = async () => {
-      if (campoSeleccionado && token) {
+      if (campoSeleccionado) {
         try {
-          const lotes = await listarLotesPorCampo(campoSeleccionado.id, token);
+          const lotes = await listarLotesPorCampo(campoSeleccionado.id);
           setLotesGuardados(lotes);
         } catch (err) {
           console.error('Error al cargar lotes del campo:', err);
@@ -41,7 +41,7 @@ const LoteForm = ({ onSuccess, onCancel }: LoteFormProps) => {
     };
     
     cargarLotesDelCampo();
-  }, [campoSeleccionado, token]);
+  }, [campoSeleccionado]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,10 +63,10 @@ const LoteForm = ({ onSuccess, onCancel }: LoteFormProps) => {
     setError('');
 
     try {
-      await crearLote(nombreLote, poligono, hectareas, campoSeleccionado.id, token!);
+            await crearLote(nombreLote, poligono, hectareas, campoSeleccionado.id);
       
       // ✅ Recargar los lotes del campo después de guardar
-      const lotesActualizados = await listarLotesPorCampo(campoSeleccionado.id, token!);
+            const lotesActualizados = await listarLotesPorCampo(campoSeleccionado.id);
       setLotesGuardados(lotesActualizados);
       
       onSuccess();

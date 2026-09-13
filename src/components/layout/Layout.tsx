@@ -13,7 +13,7 @@ export default function Layout({
   onSearch, 
   searchPlaceholder = "Buscar lote o campo..." 
 }: LayoutProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+    const [, setSearchQuery] = useState('');
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);

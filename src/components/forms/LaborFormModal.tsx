@@ -7,10 +7,9 @@ interface LaborFormModalProps {
   onClose: () => void;
   onSuccess: () => void;
   lotes: { id: number; nombre: string }[];
-  token: string;
 }
 
-const LaborFormModal = ({ isOpen, onClose, onSuccess, lotes, token }: LaborFormModalProps) => {
+const LaborFormModal = ({ isOpen, onClose, onSuccess, lotes }: LaborFormModalProps) => {
   const [loteId, setLoteId] = useState<number | ''>('');
 
   if (!isOpen) return null;
