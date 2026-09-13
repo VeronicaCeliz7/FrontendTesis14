@@ -453,6 +453,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   // ✅ EFECTO 1: CARGAR LOTES CUANDO CAMBIA EL CAMPO
   // ============================================
   useEffect(() => {
+ setLoteSeleccionadoId(null);
+
     if (!campoSeleccionado) {
       setLotes([]);
       setFilteredLotes([]);
@@ -974,6 +976,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
               const selectedId = e.target.value === '' ? null : parseInt(e.target.value);
               const campo = campos.find(c => c.id === selectedId) || null;
               setCampoSeleccionado(campo);
+              setLoteSeleccionadoId(null);
               if (campo) lastSelectedCampoRef.current = campo;
             }}
           >
