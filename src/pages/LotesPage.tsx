@@ -49,8 +49,13 @@ interface LotesPageProps {
 // =============================================
 // CONSTANTES DE COPERNICUS (desde .env)
 // =============================================
-const COPERNICUS_INSTANCE_ID = import.meta.env.VITE_COPERNICUS_INSTANCE_ID;
-const COPERNICUS_TOKEN = import.meta.env.VITE_COPERNICUS_TOKEN;
+// =============================================
+// CONSTANTES DE COPERNICUS (desde .env)
+// =============================================
+const COPERNICUS_INSTANCE_ID = import.meta.env.PUBLIC_COPERNICUS_INSTANCE_ID;
+const COPERNICUS_TOKEN = import.meta.env.PUBLIC_COPERNICUS_TOKEN;
+
+
 
 // =============================================
 // COMPONENTE PRINCIPAL

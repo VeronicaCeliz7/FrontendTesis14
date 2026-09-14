@@ -9,4 +9,6 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // 🆕 Permite leer variables con prefijo PUBLIC_ (Vercel no las traduce)
+  envPrefix: ['VITE_', 'PUBLIC_'],
 });
