@@ -2,7 +2,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-    baseURL: import.meta.env.PUBLIC_API_URL || 'http://localhost:3000/api/internal',
+    baseURL: import.meta.env.PROD
+    ? 'https://backendtesis7.onrender.com/api/internal'
+    : 'http://localhost:3000/api/internal',
 });
 
 // ✅ Interceptor para agregar el token automáticamente
