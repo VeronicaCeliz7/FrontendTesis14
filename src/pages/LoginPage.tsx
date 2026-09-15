@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sprout, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-
+import api from '../lib/axios';
 const LoginPage = () => {
   const [email, setEmail] = useState('campo@alfalfa.com');
   const [password, setPassword] = useState('');
@@ -22,22 +22,13 @@ const LoginPage = () => {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:3000/api/internal/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Credenciales inválidas');
-      }
+            const res = await api.post('/auth/login', { email, password });
+      const data = res.data;
 
       login(data.token, data.usuario);
       navigate('/lotes');
     } catch (err: any) {
-      setError(err.message);
+      setError(err.response?.data?.error || err.message || 'Credenciales inválidas');
     } finally {
       setLoading(false);
     }

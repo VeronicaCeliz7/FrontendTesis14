@@ -8,8 +8,6 @@ import LotesPage from './pages/LotesPage';
 import LaboresPage from './pages/LaboresPage';
 import CortesPage from './pages/CortesPage';
 import AlertasPage from './pages/AlertasPage';
-import TestLogin from './pages/TestLogin';
-import TestPage from './pages/TestLogin';
 import Layout from './components/layout/Layout';
 import { useState } from 'react';
 // ✅ IMPORTAR TOASTER
@@ -65,9 +63,8 @@ function App() {
           <Routes>
             {/* Rutas públicas */}
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/test" element={<TestPage />} />
-            <Route path="/test-login" element={<TestLogin />} />
             
+                        
             {/* Rutas protegidas */}
             <Route path="/" element={
               <ProtectedRoute>
