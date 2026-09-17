@@ -3,6 +3,7 @@ import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import LotesPage from './pages/LotesPage';
 import LaboresPage from './pages/LaboresPage';
@@ -12,6 +13,9 @@ import Layout from './components/layout/Layout';
 import { useState } from 'react';
 // ✅ IMPORTAR TOASTER
 import { Toaster } from 'react-hot-toast';
+
+
+
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
@@ -63,6 +67,7 @@ function App() {
           <Routes>
             {/* Rutas públicas */}
             <Route path="/login" element={<LoginPage />} />
+            <Route path="/registro" element={<RegisterPage />} />
             
                         
             {/* Rutas protegidas */}
