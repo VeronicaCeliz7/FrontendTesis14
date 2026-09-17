@@ -55,12 +55,12 @@ export function Header({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
-            className={cn(
-              "pl-9 pr-9 h-10 text-base bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700",
-              "focus:border-green-500 focus:ring-green-500/20",
-              "transition-all duration-200 placeholder:text-gray-400",
-              isFocused && "bg-white dark:bg-gray-800 shadow-lg shadow-green-500/5"
-            )}
+           className={cn(
+  "pl-9 pr-9 h-10 text-base bg-secondary border-border",
+  "focus:border-ring focus:ring-ring/20",
+  "transition-all duration-200 placeholder:text-muted-foreground",
+  isFocused && "bg-card shadow-sm"
+)}
           />
 
           {query && (

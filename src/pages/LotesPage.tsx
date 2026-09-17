@@ -1005,7 +1005,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           style={{ backgroundColor: '#e8f0f8' }}
         />
         {errorMapa && (
-          <div className="absolute inset-0 flex items-center justify-center bg-red-50/90">
+          <div className="absolute inset-0 flex items-center justify-center bg-destructive/10">
             <p className="text-red-600 text-sm">❌ Error: {errorMapa}</p>
           </div>
         )}
@@ -1047,8 +1047,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           onClick={() => setTabActiva('grafico')}
           className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 ${
             tabActiva === 'grafico'
-              ? 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400'
-              : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+             ? 'text-foreground border-foreground'
+: 'text-muted-foreground border-transparent hover:text-foreground'
           }`}
         >
           📊 Gráfico NDVI
@@ -1057,8 +1057,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           onClick={() => setTabActiva('lotes')}
           className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 ${
             tabActiva === 'lotes'
-              ? 'text-green-600 dark:text-green-400 border-green-600 dark:border-green-400'
-              : 'text-gray-500 dark:text-gray-400 border-transparent hover:text-gray-700 dark:hover:text-gray-300'
+            ? 'text-foreground border-foreground'
+: 'text-muted-foreground border-transparent hover:text-foreground'
           }`}
         >
           📦 Lotes ({filteredLotes.length})
@@ -1093,10 +1093,10 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                 const ndvi = formatearNDVI(decision?.ndvi_actual);
 
                 const colorMap: Record<string, string> = {
-                  '🟢 Corte': 'border-green-500 bg-green-50 dark:bg-green-950/30',
-                  '🟡 Esperar': 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30',
-                  '🔴 Riesgo': 'border-red-500 bg-red-50 dark:bg-red-950/30',
-                };
+  '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
+  '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
+  '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
+};
                 const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
 
                 return (
