@@ -46,16 +46,7 @@ interface LotesPageProps {
   searchQuery?: string;
 }
 
-// =============================================
-// CONSTANTES DE COPERNICUS (desde .env)
-// =============================================
-// =============================================
-// CONSTANTES DE COPERNICUS (desde .env)
-// =============================================
-const COPERNICUS_INSTANCE_ID = import.meta.env.PUBLIC_COPERNICUS_INSTANCE_ID;
-const COPERNICUS_TOKEN = import.meta.env.PUBLIC_COPERNICUS_TOKEN;
-
-
+// 
 
 // =============================================
 // COMPONENTE PRINCIPAL
@@ -124,24 +115,16 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-    if (!COPERNICUS_INSTANCE_ID || !COPERNICUS_TOKEN) {
-      toast.error('⚠️ Configuración de Copernicus faltante. Revisa el archivo .env');
-      console.error('❌ COPERNICUS_INSTANCE_ID o COPERNICUS_TOKEN no definidos');
-      return;
-    }
+    
 
-    const layer = L.tileLayer.wms(
-      `https://sh.dataspace.copernicus.eu/ogc/wms/${COPERNICUS_INSTANCE_ID}`,
+        const API_URL = import.meta.env.VITE_API_URL || 
+      (import.meta.env.PROD ? 'https://backendtesis7.onrender.com/api/internal' : 'http://localhost:3000/api/internal');
+
+    const layer = L.tileLayer(
+      `${API_URL}/ndvi/tile/{z}/{x}/{y}`,
       {
-        layers: 'NDVI',
-        format: 'image/png',
-        transparent: true,
         opacity: 0.6,
-        styles: 'green_yellow_red',
         className: 'ndvi-clip-layer',
-        headers: {
-          Authorization: `Bearer ${COPERNICUS_TOKEN}`,
-        },
       } as any
     );
 
