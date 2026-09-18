@@ -46,8 +46,6 @@ interface LotesPageProps {
   searchQuery?: string;
 }
 
-// 
-
 // =============================================
 // COMPONENTE PRINCIPAL
 // =============================================
@@ -75,14 +73,14 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
 
   // 🆕 ESTADO PARA REDIBUJO DE POLÍGONO
   const [redibujandoLoteId, setRedibujandoLoteId] = useState<number | null>(null);
-  // 🆕 ESTADO PARA EL CLIP PATH DEL NDVI (recorte SVG)
-  const [clipPaths, setClipPaths] = useState<string[]>([]);
 
   // 🆕 ESTADOS PARA MODAL DE NOMBRE DE NUEVO LOTE
   const [mostrarModalNombre, setMostrarModalNombre] = useState(false);
   const [nombreNuevoLote, setNombreNuevoLote] = useState('');
+
   // 🆕 ESTADO PARA LA TAB ACTIVA (Gráfico vs Lotes)
   const [tabActiva, setTabActiva] = useState<'grafico' | 'lotes'>('lotes');
+
   // ============================================
   // REFS
   // ============================================
@@ -102,11 +100,12 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const poligonoReferenciaRef = useRef<L.Polygon | null>(null);
 
   // ============================================
-  // FUNCIÓN PARA COPERNICUS NDVI
+  // TOGGLE CAPA NDVI (imagen por lote)
   // ============================================
   const toggleCapaNDVI = useCallback(() => {
     if (!mapInstanceRef.current) return;
 
+    // Si ya está activo → desactivar
     if (capaNDVI) {
       mapInstanceRef.current.removeLayer(capaNDVI);
       setCapaNDVI(null);
@@ -115,38 +114,18 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-    
-
-        const API_URL = import.meta.env.VITE_API_URL || 
-      (import.meta.env.PROD ? 'https://backendtesis7.onrender.com/api/internal' : 'http://localhost:3000/api/internal');
-
-    const layer = L.tileLayer(
-      `${API_URL}/ndvi/tile/{z}/{x}/{y}`,
-      {
-        opacity: 0.6,
-        className: 'ndvi-clip-layer',
-      } as any
-    );
-
-    layer.addTo(mapInstanceRef.current);
-    setCapaNDVI(layer);
-    setMostrarNDVI(true);
-    toast.success('🌿 Mapa de calor NDVI activado');
-  }, [capaNDVI]);
-
-  // ============================================
-  // 🆕 ACTUALIZAR CLIP PATH DEL NDVI
-  // ============================================
-  const actualizarClipPath = useCallback(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
     if (!lotes || lotes.length === 0) {
-      setClipPaths([]);
+      toast.error('⚠️ No hay lotes para mostrar');
       return;
     }
 
-    const paths: string[] = [];
+    const API_URL = import.meta.env.VITE_API_URL ||
+      (import.meta.env.PROD
+        ? 'https://backendtesis7.onrender.com/api/internal'
+        : 'http://localhost:3000/api/internal');
+
+    // Crear un LayerGroup con todos los overlays (uno por lote)
+    const grupo = L.layerGroup();
 
     lotes.forEach((lote) => {
       try {
@@ -159,41 +138,36 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         const coords = geojson.coordinates[0];
         if (!coords || coords.length === 0) return;
 
-        const pathParts = coords.map((p: number[], i: number) => {
-          const point = map.latLngToLayerPoint([p[1], p[0]]);
-          return `${i === 0 ? 'M' : 'L'} ${point.x} ${point.y}`;
-        });
+        // Calcular bounds del lote
+        const lats = coords.map((c: number[]) => c[1]);
+        const lngs = coords.map((c: number[]) => c[0]);
+        const bounds: L.LatLngBoundsExpression = [
+          [Math.min(...lats), Math.min(...lngs)],
+          [Math.max(...lats), Math.max(...lngs)],
+        ];
 
-        paths.push(pathParts.join(' ') + ' Z');
+        // Crear el overlay con la imagen del backend
+        // ?t=timestamp fuerza a no usar caché del navegador
+        const overlay = L.imageOverlay(
+          `${API_URL}/ndvi/lote/${lote.id}?t=${Date.now()}`,
+          bounds,
+          {
+            opacity: 0.7,
+            interactive: false,
+          }
+        );
+
+        grupo.addLayer(overlay);
       } catch (err) {
-        console.warn('Error generando clip path para lote', lote?.id, err);
+        console.warn('Error creando overlay NDVI para lote', lote?.id, err);
       }
     });
 
-    setClipPaths(paths);
-  }, [lotes]);
-
-  useEffect(() => {
-    if (!mapaListo) return;
-    actualizarClipPath();
-  }, [lotes, mapaListo, actualizarClipPath]);
-
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    if (!map) return;
-
-    const handleMove = () => {
-      actualizarClipPath();
-    };
-
-    map.on('moveend', handleMove);
-    map.on('zoomend', handleMove);
-
-    return () => {
-      map.off('moveend', handleMove);
-      map.off('zoomend', handleMove);
-    };
-  }, [actualizarClipPath]);
+    grupo.addTo(mapInstanceRef.current);
+    setCapaNDVI(grupo);
+    setMostrarNDVI(true);
+    toast.success(`🌿 NDVI activado en ${lotes.length} lote(s)`);
+  }, [capaNDVI, lotes]);
 
   // ============================================
   // INICIALIZAR MAPA
@@ -212,17 +186,18 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       mapInstanceRef.current = map;
       mapInitRef.current = true;
 
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri',
-        maxZoom: 19,
-      }).addTo(map);
+     L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+  attribution: '&copy; Google Maps',
+  maxZoom: 21,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+}).addTo(map);
 
-      L.tileLayer('https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Maps',
-        maxZoom: 19,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        opacity: 0.7,
-      }).addTo(map);
+     L.tileLayer('https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
+  attribution: '&copy; Google Maps',
+  maxZoom: 21,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+  opacity: 0.7,
+}).addTo(map);
 
       lotesLayerRef.current = L.layerGroup().addTo(map);
 
@@ -439,13 +414,11 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   }, [cargarCampos]);
 
   // ============================================
-  // ✅ EFECTO 1: CARGAR LOTES CUANDO CAMBIA EL CAMPO
+  // EFECTO 1: CARGAR LOTES CUANDO CAMBIA EL CAMPO
   // ============================================
   useEffect(() => {
-
-    // 🆕 Resetear tab al cambiar de campo
-  setTabActiva('lotes');
- setLoteSeleccionadoId(null);
+    setTabActiva('lotes');
+    setLoteSeleccionadoId(null);
 
     if (!campoSeleccionado) {
       setLotes([]);
@@ -456,18 +429,15 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-    console.log('🔄 Cargando lotes para campo:', campoSeleccionado.nombre);
     cargarLotesDelCampo(campoSeleccionado);
   }, [campoSeleccionado]);
 
   // ============================================
-  // ✅ EFECTO 2: ZOOM AL CAMPO
+  // EFECTO 2: ZOOM AL CAMPO
   // ============================================
   useEffect(() => {
     if (!campoSeleccionado || !mapInstanceRef.current) return;
     if (lotes.length === 0) return;
-
-    console.log('📍 Haciendo zoom a:', campoSeleccionado.nombre, 'con', lotes.length, 'lotes');
 
     try {
       let latSum = 0, lngSum = 0, count = 0;
@@ -493,14 +463,11 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       if (count > 0) {
         const centerLat = latSum / count;
         const centerLng = lngSum / count;
-        console.log('📍 Centro calculado desde TODOS los lotes:', centerLat, centerLng);
         mapInstanceRef.current.flyTo([centerLat, centerLng], 13);
       } else {
-        console.warn('⚠️ No hay lotes con coordenadas, usando James Craik');
         mapInstanceRef.current.flyTo([-32.1612, -63.4616], 13);
       }
     } catch (e) {
-      console.warn('Error calculando centro:', e);
       mapInstanceRef.current.flyTo([-32.1612, -63.4616], 13);
     }
   }, [lotes, campoSeleccionado]);
@@ -617,7 +584,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     setModoDibujo(true);
   };
 
-  // 🆕 ACTIVAR REDIBUJO DE UN LOTE EXISTENTE
+  // ACTIVAR REDIBUJO DE UN LOTE EXISTENTE
   const activarRedibujo = (lote: any) => {
     if (!mapInstanceRef.current) return;
 
@@ -665,7 +632,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-    // 🆕 SI ESTAMOS REDIBUJANDO → guardar directo sin pedir nombre
+    // SI ESTAMOS REDIBUJANDO → guardar directo sin pedir nombre
     if (redibujandoLoteId) {
       const loteOriginal = lotes.find(l => l.id === redibujandoLoteId);
       if (!loteOriginal) {
@@ -717,13 +684,12 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
-    // 🔽 FLUJO ORIGINAL DE "CREAR NUEVO LOTE"
+    // FLUJO ORIGINAL DE "CREAR NUEVO LOTE"
     if (!campoSeleccionado) {
       toast.error('No hay campo seleccionado');
       return;
     }
 
-    // 🆕 Abrir modal para pedir el nombre (reemplaza window.prompt)
     setNombreNuevoLote('');
     setMostrarModalNombre(true);
   };
@@ -743,7 +709,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     setRedibujandoLoteId(null);
   };
 
-  // 🆕 NUEVA FUNCIÓN: Guardar lote nuevo (llamada desde el modal)
+  // NUEVA FUNCIÓN: Guardar lote nuevo (llamada desde el modal)
   const handleGuardarNuevoLote = async () => {
     if (!nombreNuevoLote.trim()) {
       toast.error('El nombre es obligatorio');
@@ -789,7 +755,6 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     }
   };
 
-  // 🆕 Cancelar el modal de nombre
   const handleCancelarModalNombre = () => {
     setMostrarModalNombre(false);
     setNombreNuevoLote('');
@@ -901,29 +866,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   // ============================================
   // RENDER
   // ============================================
-    return (
+  return (
     <div className="h-full flex flex-col gap-3">
-      {/* 🆕 SVG OCULTO CON LOS PATHS DE RECORTE DEL NDVI */}
-      <svg
-        style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }}
-        aria-hidden="true"
-      >
-        <defs>
-          <clipPath id="ndvi-clip-path" clipPathUnits="userSpaceOnUse">
-            {clipPaths.map((path, i) => (
-              <path key={i} d={path} />
-            ))}
-          </clipPath>
-        </defs>
-      </svg>
-
-      {/* 🆕 ESTILO PARA APLICAR EL CLIP A LA CAPA NDVI */}
-      <style>{`
-        .ndvi-clip-layer {
-          clip-path: url(#ndvi-clip-path);
-        }
-      `}</style>
-
       {/* HEADER COMPACTO: Título + Botones */}
       <div className="flex items-center justify-between gap-2 flex-shrink-0">
         <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white">
@@ -961,7 +905,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
             const campo = campos.find(c => c.id === selectedId) || null;
             setCampoSeleccionado(campo);
             setLoteSeleccionadoId(null);
-             setTabActiva('lotes');  
+            setTabActiva('lotes');
             if (campo) lastSelectedCampoRef.current = campo;
           }}
         >
@@ -1030,8 +974,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           onClick={() => setTabActiva('grafico')}
           className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 ${
             tabActiva === 'grafico'
-             ? 'text-foreground border-foreground'
-: 'text-muted-foreground border-transparent hover:text-foreground'
+              ? 'text-foreground border-foreground'
+              : 'text-muted-foreground border-transparent hover:text-foreground'
           }`}
         >
           📊 Gráfico NDVI
@@ -1040,8 +984,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           onClick={() => setTabActiva('lotes')}
           className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 ${
             tabActiva === 'lotes'
-            ? 'text-foreground border-foreground'
-: 'text-muted-foreground border-transparent hover:text-foreground'
+              ? 'text-foreground border-foreground'
+              : 'text-muted-foreground border-transparent hover:text-foreground'
           }`}
         >
           📦 Lotes ({filteredLotes.length})
@@ -1076,19 +1020,19 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                 const ndvi = formatearNDVI(decision?.ndvi_actual);
 
                 const colorMap: Record<string, string> = {
-  '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
-  '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
-  '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
-};
+                  '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
+                  '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
+                  '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
+                };
                 const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
 
                 return (
                   <div
                     key={lote.id}
-                    className={`rounded-lg p-2 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition border-l-4 ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
+                    className={`rounded-lg p-2 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
                     onClick={() => {
                       setLoteSeleccionadoId(lote.id);
-                      setTabActiva('grafico');   // 🆕 Auto-switch al gráfico
+                      setTabActiva('grafico');
                     }}
                   >
                     <div className="flex items-center gap-2 min-w-0">
@@ -1131,7 +1075,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         )}
       </div>
 
-      {/* MODAL DE EDICIÓN (sin cambios) */}
+      {/* MODAL DE EDICIÓN */}
       {mostrarModalEdicion && loteEditando && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-xl">
@@ -1216,7 +1160,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </div>
       )}
 
-      {/* MODAL DE NOMBRE DE NUEVO LOTE (sin cambios) */}
+      {/* MODAL DE NOMBRE DE NUEVO LOTE */}
       {mostrarModalNombre && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-xl">
@@ -1261,7 +1205,5 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     </div>
   );
 };
-
-
 
 export default LotesPage;
