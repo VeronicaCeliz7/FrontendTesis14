@@ -67,18 +67,18 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const [mapaListo, setMapaListo] = useState(false);
   const [errorMapa, setErrorMapa] = useState<string | null>(null);
   
-  // ESTADOS PARA COPERNICUS NDVI
+  // ✅ ESTADOS PARA COPERNICUS NDVI
   const [mostrarNDVI, setMostrarNDVI] = useState(false);
   const [capaNDVI, setCapaNDVI] = useState<L.Layer | null>(null);
 
-  // ESTADO PARA REDIBUJO DE POLÍGONO
+  // 🆕 ESTADO PARA REDIBUJO DE POLÍGONO
   const [redibujandoLoteId, setRedibujandoLoteId] = useState<number | null>(null);
 
-  // ESTADOS PARA MODAL DE NOMBRE DE NUEVO LOTE
+  // 🆕 ESTADOS PARA MODAL DE NOMBRE DE NUEVO LOTE
   const [mostrarModalNombre, setMostrarModalNombre] = useState(false);
   const [nombreNuevoLote, setNombreNuevoLote] = useState('');
 
-  // ESTADO PARA LA TAB ACTIVA (Gráfico vs Lotes)
+  // 🆕 ESTADO PARA LA TAB ACTIVA (Gráfico vs Lotes)
   const [tabActiva, setTabActiva] = useState<'grafico' | 'lotes'>('lotes');
 
   // ============================================
@@ -96,7 +96,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const decisionesRef = useRef<Map<number, DecisionCorte>>(new Map());
   const mapInitRef = useRef(false);
 
-  // REF PARA EL POLÍGONO DE REFERENCIA
+  // 🆕 REF PARA EL POLÍGONO DE REFERENCIA (gris punteado)
   const poligonoReferenciaRef = useRef<L.Polygon | null>(null);
 
   // ============================================
@@ -105,6 +105,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const toggleCapaNDVI = useCallback(() => {
     if (!mapInstanceRef.current) return;
 
+    // Si ya está activo → desactivar
     if (capaNDVI) {
       mapInstanceRef.current.removeLayer(capaNDVI);
       setCapaNDVI(null);
@@ -123,6 +124,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         ? 'https://backendtesis7.onrender.com/api/internal'
         : 'http://localhost:3000/api/internal');
 
+    // Crear un LayerGroup con todos los overlays (uno por lote)
     const grupo = L.layerGroup();
 
     lotes.forEach((lote) => {
@@ -136,6 +138,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         const coords = geojson.coordinates[0];
         if (!coords || coords.length === 0) return;
 
+        // Calcular bounds del lote
         const lats = coords.map((c: number[]) => c[1]);
         const lngs = coords.map((c: number[]) => c[0]);
         const bounds: L.LatLngBoundsExpression = [
@@ -143,6 +146,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           [Math.max(...lats), Math.max(...lngs)],
         ];
 
+        // Crear el overlay con la imagen del backend
+        // ?t=timestamp fuerza a no usar caché del navegador
         const overlay = L.imageOverlay(
           `${API_URL}/ndvi/lote/${lote.id}?t=${Date.now()}`,
           bounds,
@@ -181,18 +186,18 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       mapInstanceRef.current = map;
       mapInitRef.current = true;
 
-      L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Maps',
-        maxZoom: 21,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-      }).addTo(map);
+     L.tileLayer('https://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+  attribution: '&copy; Google Maps',
+  maxZoom: 21,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+}).addTo(map);
 
-      L.tileLayer('https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
-        attribution: '&copy; Google Maps',
-        maxZoom: 21,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        opacity: 0.7,
-      }).addTo(map);
+     L.tileLayer('https://{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}', {
+  attribution: '&copy; Google Maps',
+  maxZoom: 21,
+  subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+  opacity: 0.7,
+}).addTo(map);
 
       lotesLayerRef.current = L.layerGroup().addTo(map);
 
@@ -498,7 +503,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     if (campoEncontrado) {
       setFilteredLotes(lotes);
     } else {
-      setFilteredLotes([]);
+       setFilteredLotes(lotes);
     }
   }, [searchQuery, campos, lotes, campoSeleccionado]);
 
@@ -579,6 +584,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     setModoDibujo(true);
   };
 
+  // ACTIVAR REDIBUJO DE UN LOTE EXISTENTE
   const activarRedibujo = (lote: any) => {
     if (!mapInstanceRef.current) return;
 
@@ -626,6 +632,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
+    // SI ESTAMOS REDIBUJANDO → guardar directo sin pedir nombre
     if (redibujandoLoteId) {
       const loteOriginal = lotes.find(l => l.id === redibujandoLoteId);
       if (!loteOriginal) {
@@ -677,6 +684,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       return;
     }
 
+    // FLUJO ORIGINAL DE "CREAR NUEVO LOTE"
     if (!campoSeleccionado) {
       toast.error('No hay campo seleccionado');
       return;
@@ -701,6 +709,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     setRedibujandoLoteId(null);
   };
 
+  // NUEVA FUNCIÓN: Guardar lote nuevo (llamada desde el modal)
   const handleGuardarNuevoLote = async () => {
     if (!nombreNuevoLote.trim()) {
       toast.error('El nombre es obligatorio');
@@ -751,6 +760,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     setNombreNuevoLote('');
   };
 
+  // ============================================
+  // FUNCIONES DE EDICIÓN
+  // ============================================
   const handleEditarLote = (lote: any) => {
     setLoteEditando({ ...lote, hectareas: lote.hectareas || 0 });
     setMostrarModalEdicion(true);
@@ -821,6 +833,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     }
   };
 
+  // ============================================
+  // CREAR NUEVO CAMPO
+  // ============================================
   const crearNuevoCampo = async () => {
     const nombre = window.prompt('📌 Nombre del nuevo campo:', 'Mi Campo');
     if (!nombre || !nombre.trim()) {
@@ -853,7 +868,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   // ============================================
   return (
     <div className="h-full flex flex-col gap-3">
-      {/* HEADER COMPACTO */}
+      {/* HEADER COMPACTO: Título + Botones */}
       <div className="flex items-center justify-between gap-2 flex-shrink-0">
         <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white">
           Mis Lotes
@@ -880,7 +895,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </div>
       </div>
 
-      {/* SELECTOR DE CAMPO */}
+      {/* SELECTOR DE CAMPO COMPACTO */}
       <div className="flex gap-2 flex-shrink-0">
         <select
           className="px-3 py-1.5 border rounded-lg text-sm flex-1 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-white"
@@ -909,7 +924,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </button>
       </div>
 
-      {/* MAPA */}
+      {/* MAPA: ocupa el espacio disponible (flex-1) */}
       <div className="flex-1 min-h-[200px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 relative">
         <div
           ref={mapRef}
@@ -953,7 +968,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </div>
       )}
 
-      {/* TABS */}
+      {/* TABS: Gráfico / Lotes */}
       <div className="flex-shrink-0 flex gap-2 border-b border-gray-200 dark:border-gray-800">
         <button
           onClick={() => setTabActiva('grafico')}
@@ -997,76 +1012,63 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           </div>
         ) : (
           // ─── TAB LOTES ───
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {filteredLotes.length > 0 ? (
-                filteredLotes.map((lote) => {
-                  const decision = decisionesRef.current.get(lote.id);
-                  const semaforo = decision?.semaforo || '🟡 Esperar';
-                  const ndvi = formatearNDVI(decision?.ndvi_actual);
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {filteredLotes.length > 0 ? (
+              filteredLotes.map((lote) => {
+                const decision = decisionesRef.current.get(lote.id);
+                const semaforo = decision?.semaforo || '🟡 Esperar';
+                const ndvi = formatearNDVI(decision?.ndvi_actual);
 
-                  const colorMap: Record<string, string> = {
-                    '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
-                    '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
-                    '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
-                  };
-                  const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
+                const colorMap: Record<string, string> = {
+                  '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
+                  '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
+                  '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
+                };
+                const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
 
-                  return (
-                    <div
-                      key={lote.id}
-                      className={`rounded-lg p-2 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
-                      onClick={() => {
-                        setLoteSeleccionadoId(lote.id);
-                      }}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-xl flex-shrink-0" title={decision?.motivo || 'Sin decisión'}>
-                          {semaforo}
+                return (
+                  <div
+                    key={lote.id}
+                    className={`rounded-lg p-2 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
+                    onClick={() => {
+                      setLoteSeleccionadoId(lote.id);
+                      
+                    }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xl flex-shrink-0" title={decision?.motivo || 'Sin decisión'}>
+                        {semaforo}
+                      </span>
+                      <div className="truncate">
+                        <b className="truncate block text-gray-900 dark:text-white text-sm">{lote.nombre}</b>
+                        <span className="text-gray-500 dark:text-gray-400 text-xs">
+                          {formatearArea(lote.hectareas)} ha
+                          {ndvi !== 'N/A' && <> • {ndvi}</>}
                         </span>
-                        <div className="truncate">
-                          <b className="truncate block text-gray-900 dark:text-white text-sm">{lote.nombre}</b>
-                          <span className="text-gray-500 dark:text-gray-400 text-xs">
-                            {formatearArea(lote.hectareas)} ha
-                            {ndvi !== 'N/A' && <> • {ndvi}</>}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0 ml-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleEditarLote(lote); }}
-                          className="text-blue-500 hover:text-blue-700 text-sm px-1"
-                          title="Editar lote"
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleEliminarLote(lote.id, lote.nombre); }}
-                          className="text-red-500 hover:text-red-700 text-sm px-1"
-                          title="Eliminar lote"
-                        >
-                          🗑️
-                        </button>
                       </div>
                     </div>
-                  );
-                })
-              ) : (
-                <div className="text-gray-500 dark:text-gray-400 text-sm col-span-full text-center py-8">
-                  {cargandoLotes ? '🔄 Cargando lotes...' : searchQuery ? '🔍 No se encontró ningún campo' : '📭 No hay lotes en este campo'}
-                </div>
-              )}
-            </div>
-
-            {/* 🆕 Gráfico debajo de las cards */}
-            {loteSeleccionadoId && (
-              <div className="mt-4">
-                <div key={`grafico-wrapper-${loteSeleccionadoId}`}>
-                  <GraficoNDVI
-                    loteId={loteSeleccionadoId}
-                    loteNombre={lotes.find(l => l.id === loteSeleccionadoId)?.nombre}
-                  />
-                </div>
+                    <div className="flex gap-1 flex-shrink-0 ml-1">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEditarLote(lote); }}
+                        className="text-blue-500 hover:text-blue-700 text-sm px-1"
+                        title="Editar lote"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleEliminarLote(lote.id, lote.nombre); }}
+                        className="text-red-500 hover:text-red-700 text-sm px-1"
+                        title="Eliminar lote"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-gray-500 dark:text-gray-400 text-sm col-span-full text-center py-8">
+                {cargandoLotes ? '🔄 Cargando lotes...' : searchQuery ? '🔍 No se encontró ningún campo' : '📭 No hay lotes en este campo'}
               </div>
             )}
           </div>
