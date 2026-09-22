@@ -34,10 +34,10 @@ export function Header({
 
   return (
     <header className="flex h-16 items-center gap-3 border-b bg-white dark:bg-gray-950 px-4 sm:px-6 flex-shrink-0">
-      {/* Botón hamburguesa (visible en TODAS las pantallas) */}
+      {/* Botón hamburguesa (solo mobile) */}
       <button
         onClick={onToggleSidebar}
-        className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+        className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
         aria-label="Abrir menú"
       >
         <Menu className="h-6 w-6 text-gray-700 dark:text-gray-300" />
@@ -55,12 +55,12 @@ export function Header({
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder={placeholder}
-            className={cn(
-              "pl-9 pr-9 h-10 text-base bg-secondary border-border",
-              "focus:border-ring focus:ring-ring/20",
-              "transition-all duration-200 placeholder:text-muted-foreground",
-              isFocused && "bg-card shadow-sm"
-            )}
+           className={cn(
+  "pl-9 pr-9 h-10 text-base bg-secondary border-border",
+  "focus:border-ring focus:ring-ring/20",
+  "transition-all duration-200 placeholder:text-muted-foreground",
+  isFocused && "bg-card shadow-sm"
+)}
           />
 
           {query && (

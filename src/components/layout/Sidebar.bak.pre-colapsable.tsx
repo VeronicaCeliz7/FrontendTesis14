@@ -21,27 +21,28 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "w-72 md:w-64 h-full border-r bg-white dark:bg-gray-950 flex flex-col shadow-lg z-[9999]",
-        "fixed top-0 left-0 transition-transform duration-300 ease-in-out",
-        abierto ? "translate-x-0" : "-translate-x-full"
+        "w-72 min-h-screen border-r bg-white dark:bg-gray-950 flex flex-col shadow-lg z-[9999]",
+        "md:relative md:translate-x-0",
+        "fixed top-0 left-0 h-full transition-transform duration-300 ease-in-out",
+        abierto ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}
     >
       {/* Header del sidebar */}
-      <div className="flex h-16 items-center gap-3 border-b px-4 flex-shrink-0">
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-600/20 flex-shrink-0">
-          <Sprout className="h-6 w-6 text-white" />
+      <div className="flex h-20 items-center gap-3 border-b px-6">
+        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-600/20">
+          <Sprout className="h-7 w-7 text-white" />
         </div>
-        <div className="flex-1 min-w-0">
-          <span className="block text-lg font-extrabold text-gray-900 dark:text-white truncate">
+        <div className="flex-1">
+          <span className="block text-xl font-extrabold text-gray-900 dark:text-white">
             AlfalfaTrace
           </span>
-          <span className="block text-xs font-medium text-gray-600 dark:text-gray-300 truncate">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
             Sistema de gestión
           </span>
         </div>
         <button
           onClick={onCerrar}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
+          className="md:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           aria-label="Cerrar menú"
         >
           <X className="h-5 w-5 text-gray-500 dark:text-gray-400" />

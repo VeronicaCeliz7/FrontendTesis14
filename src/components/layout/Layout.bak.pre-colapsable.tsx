@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 
@@ -13,24 +13,7 @@ export default function Layout({
   onSearch, 
   searchPlaceholder = "Buscar lote o campo..." 
 }: LayoutProps) {
-  // 🆕 Persistir el estado en localStorage
-  const [sidebarAbierto, setSidebarAbierto] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return false;
-    try {
-      return localStorage.getItem('alfalfatrace.sidebar-abierto') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // 🆕 Guardar cambios en localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('alfalfatrace.sidebar-abierto', String(sidebarAbierto));
-    } catch (e) {
-      // Ignorar errores de localStorage (modo privado, etc.)
-    }
-  }, [sidebarAbierto]);
+  const [sidebarAbierto, setSidebarAbierto] = useState(false);
 
   const handleSearch = (query: string) => {
     if (onSearch) onSearch(query);
@@ -38,10 +21,10 @@ export default function Layout({
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Overlay oscuro (todas las pantallas, cuando el sidebar está abierto) */}
+      {/* Overlay oscuro (solo mobile, cuando el sidebar está abierto) */}
       {sidebarAbierto && (
         <div
-          className="fixed inset-0 bg-black/50 z-[9998] transition-opacity"
+          className="fixed inset-0 bg-black/50 z-[9998] md:hidden"
           onClick={() => setSidebarAbierto(false)}
           aria-hidden="true"
         />
@@ -61,7 +44,7 @@ export default function Layout({
           onToggleSidebar={() => setSidebarAbierto(!sidebarAbierto)}
         />
 
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 bg-gray-50/50 dark:bg-gray-950/50">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-gray-50/50 dark:bg-gray-950/50">
           {children}
         </main>
       </div>
