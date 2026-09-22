@@ -78,15 +78,14 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   const [mostrarModalNombre, setMostrarModalNombre] = useState(false);
   const [nombreNuevoLote, setNombreNuevoLote] = useState('');
 
+  // ESTADO PARA LA TAB ACTIVA (Gráfico vs Lotes)
+  const [tabActiva, setTabActiva] = useState<'grafico' | 'lotes'>('lotes');
+
   // 🆕 ESTADOS PARA MODAL DE NUEVO CAMPO Y BIENVENIDA
   const [mostrarModalNuevoCampo, setMostrarModalNuevoCampo] = useState(false);
   const [nombreNuevoCampo, setNombreNuevoCampo] = useState('');
   const [mostrarBienvenida, setMostrarBienvenida] = useState(false);
   const [cargandoCampos, setCargandoCampos] = useState(true);
-
-  // 🆕 MODAL DEL GRÁFICO (al clickear una tarjeta)
-  const [mostrarModalGrafico, setMostrarModalGrafico] = useState(false);
-  const [loteGraficoId, setLoteGraficoId] = useState<number | null>(null);
 
   // ============================================
   // REFS
@@ -258,14 +257,14 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       if (puntosRef.current.length >= 3) {
         lineasRef.current = L.polygon(lineCoords as any, {
           color: '#ef4444',
-          weight: 2,
+          weight: 3,
           fillColor: '#ef4444',
           fillOpacity: 0.1,
         }).addTo(map);
       } else {
         lineasRef.current = L.polyline(lineCoords as any, {
           color: '#ef4444',
-          weight: 2,
+          weight: 3,
         }).addTo(map);
       }
     }
@@ -304,7 +303,6 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         };
         const color = colorMap[semaforo] || '#3b82f6';
 
-        // 🆕 Popup simplificado: sin "Riesgo" duplicado
         const popupHTML = `
           <div style="font-family: system-ui, sans-serif; padding: 4px; min-width: 220px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
@@ -312,7 +310,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
               <strong style="font-size: 16px;">${lote.nombre || 'Sin nombre'}</strong>
             </div>
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-              <span style="font-size: 24px;">${semaforo}</span>
+              <span style="font-size: 28px;">${semaforo}</span>
+              <span style="font-weight: bold; font-size: 14px;">${semaforo.split(' ')[1] || 'Esperar'}</span>
             </div>
             <hr style="margin: 6px 0; border: 0.5px solid #e5e7eb;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 13px;">
@@ -417,7 +416,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     cargarCampos();
   }, [cargarCampos]);
 
-  // Mostrar modal de bienvenida si no hay campos (y ya terminó de cargar)
+  // 🆕 Mostrar modal de bienvenida si no hay campos (y ya terminó de cargar)
   useEffect(() => {
     if (!cargandoCampos && campos.length === 0) {
       setMostrarBienvenida(true);
@@ -430,6 +429,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   // EFECTO 1: CARGAR LOTES CUANDO CAMBIA EL CAMPO
   // ============================================
   useEffect(() => {
+    setTabActiva('lotes');
     setLoteSeleccionadoId(null);
 
     if (!campoSeleccionado) {
@@ -838,13 +838,13 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     }
   };
 
-  // Abrir modal para nombrar el campo
+  // 🆕 Abrir modal para nombrar el campo
   const abrirModalNuevoCampo = () => {
     setNombreNuevoCampo('');
     setMostrarModalNuevoCampo(true);
   };
 
-  // Confirmar creación del campo (desde el modal)
+  // 🆕 Confirmar creación del campo (desde el modal)
   const confirmarNuevoCampo = async () => {
     const nombre = nombreNuevoCampo.trim();
     if (!nombre) {
@@ -879,23 +879,10 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     }
   };
 
-  // Cancelar modal nuevo campo
+  // 🆕 Cancelar modal nuevo campo
   const cancelarNuevoCampo = () => {
     setMostrarModalNuevoCampo(false);
     setNombreNuevoCampo('');
-  };
-
-  // 🆕 Abrir modal del gráfico (al clickear una tarjeta)
-  const abrirModalGrafico = (loteId: number) => {
-    setLoteGraficoId(loteId);
-    setLoteSeleccionadoId(loteId);
-    setMostrarModalGrafico(true);
-  };
-
-  // 🆕 Cerrar modal del gráfico
-  const cerrarModalGrafico = () => {
-    setMostrarModalGrafico(false);
-    setLoteGraficoId(null);
   };
 
   // ============================================
@@ -941,6 +928,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
             const campo = campos.find(c => c.id === selectedId) || null;
             setCampoSeleccionado(campo);
             setLoteSeleccionadoId(null);
+            setTabActiva('lotes');
             if (campo) lastSelectedCampoRef.current = campo;
           }}
         >
@@ -959,6 +947,36 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </button>
       </div>
 
+      {/* MAPA */}
+      <div className="flex-1 min-h-[200px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 relative">
+        <div
+          ref={mapRef}
+          className="w-full h-full"
+          style={{ backgroundColor: '#e8f0f8' }}
+        />
+        {errorMapa && (
+          <div className="absolute inset-0 flex items-center justify-center bg-destructive/10">
+            <p className="text-red-600 text-sm">❌ Error: {errorMapa}</p>
+          </div>
+        )}
+        {cargandoLotes && (
+          <div className="absolute top-2 right-2 z-[1000] bg-white/95 dark:bg-gray-900/95 px-2 py-1 rounded shadow text-xs text-gray-700 dark:text-gray-300">
+            🔄 Cargando...
+          </div>
+        )}
+        
+        <button
+          onClick={toggleCapaNDVI}
+          className={`absolute bottom-2 left-2 z-[1000] px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium transition-colors ${
+            mostrarNDVI
+              ? 'bg-red-600 hover:bg-red-700 text-white'
+              : 'bg-green-600 hover:bg-green-700 text-white'
+          }`}
+        >
+          {mostrarNDVI ? '❌ Ocultar NDVI' : '🌿 Mostrar NDVI'}
+        </button>
+      </div>
+
       {/* MODO DIBUJO (aviso) */}
       {modoDibujo && (
         <div className={`p-2 text-center text-xs rounded-lg flex-shrink-0 ${
@@ -973,142 +991,122 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </div>
       )}
 
-      {/* 🆕 GRID: MAPA (izquierda) + TARJETAS (derecha) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-3 min-h-[500px]">
-        
-        {/* MAPA */}
-        <div className="min-h-[400px] rounded-lg overflow-hidden border border-gray-200 dark:border-gray-800 relative">
-          <div
-            ref={mapRef}
-            className="w-full h-full"
-            style={{ backgroundColor: '#e8f0f8' }}
-          />
-          {errorMapa && (
-            <div className="absolute inset-0 flex items-center justify-center bg-destructive/10">
-              <p className="text-red-600 text-sm">❌ Error: {errorMapa}</p>
-            </div>
-          )}
-          {cargandoLotes && (
-            <div className="absolute top-2 right-2 z-[1000] bg-white/95 dark:bg-gray-900/95 px-2 py-1 rounded shadow text-xs text-gray-700 dark:text-gray-300">
-              🔄 Cargando...
-            </div>
-          )}
-          
-          <button
-            onClick={toggleCapaNDVI}
-            className={`absolute bottom-2 left-2 z-[1000] px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium transition-colors ${
-              mostrarNDVI
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white'
-            }`}
-          >
-            {mostrarNDVI ? '❌ Ocultar NDVI' : '🌿 Mostrar NDVI'}
-          </button>
-        </div>
+      {/* TABS */}
+      <div className="flex-shrink-0 flex gap-2 border-b border-gray-200 dark:border-gray-800">
+        <button
+          onClick={() => setTabActiva('grafico')}
+          className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 ${
+            tabActiva === 'grafico'
+              ? 'text-foreground border-foreground'
+              : 'text-muted-foreground border-transparent hover:text-foreground'
+          }`}
+        >
+          📊 Gráfico NDVI
+        </button>
+        <button
+          onClick={() => setTabActiva('lotes')}
+          className={`flex-1 py-2 text-sm font-medium transition-colors border-b-2 ${
+            tabActiva === 'lotes'
+              ? 'text-foreground border-foreground'
+              : 'text-muted-foreground border-transparent hover:text-foreground'
+          }`}
+        >
+          📦 Lotes ({filteredLotes.length})
+        </button>
+      </div>
 
-        {/* TARJETAS (columna derecha) */}
-        <div className="flex flex-col min-h-0 lg:max-h-full">
-          <div className="flex items-center justify-between mb-2 flex-shrink-0">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              📦 Lotes ({filteredLotes.length})
-            </h2>
-          </div>
-
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-            {filteredLotes.length > 0 ? (
-              filteredLotes.map((lote) => {
-                const decision = decisionesRef.current.get(lote.id);
-                const semaforo = decision?.semaforo || '🟡 Esperar';
-                const ndvi = formatearNDVI(decision?.ndvi_actual);
-
-                const colorMap: Record<string, string> = {
-                  '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
-                  '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
-                  '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
-                };
-                const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
-
-                return (
-                  <div
-                    key={lote.id}
-                    className={`rounded-lg p-3 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
-                    onClick={() => abrirModalGrafico(lote.id)}
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xl flex-shrink-0" title={decision?.motivo || 'Sin decisión'}>
-                        {semaforo}
-                      </span>
-                      <div className="truncate">
-                        <b className="truncate block text-gray-900 dark:text-white text-sm">{lote.nombre}</b>
-                        <span className="text-gray-500 dark:text-gray-400 text-xs">
-                          {formatearArea(lote.hectareas)} ha
-                          {ndvi !== 'N/A' && <> • {ndvi}</>}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex gap-1 flex-shrink-0 ml-1">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEditarLote(lote); }}
-                        className="text-blue-500 hover:text-blue-700 text-sm px-1"
-                        title="Editar lote"
-                      >
-                        ✏️
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEliminarLote(lote.id, lote.nombre); }}
-                        className="text-red-500 hover:text-red-700 text-sm px-1"
-                        title="Eliminar lote"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
+      {/* CONTENIDO DE LA TAB ACTIVA */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {tabActiva === 'grafico' ? (
+          <div>
+            {loteSeleccionadoId ? (
+              <div key={`grafico-wrapper-${loteSeleccionadoId}`}>
+                <GraficoNDVI
+                  loteId={loteSeleccionadoId}
+                  loteNombre={lotes.find(l => l.id === loteSeleccionadoId)?.nombre}
+                />
+              </div>
             ) : (
-              <div className="text-gray-500 dark:text-gray-400 text-sm text-center py-8">
-                {cargandoLotes ? '🔄 Cargando lotes...' : searchQuery ? '🔍 No se encontró ningún campo' : '📭 No hay lotes en este campo'}
+              <div className="flex justify-center items-center h-full py-12">
+                <p className="text-gray-500 text-sm">Seleccioná un lote para ver su gráfico NDVI</p>
               </div>
             )}
           </div>
-        </div>
-      </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {filteredLotes.length > 0 ? (
+                filteredLotes.map((lote) => {
+                  const decision = decisionesRef.current.get(lote.id);
+                  const semaforo = decision?.semaforo || '🟡 Esperar';
+                  const ndvi = formatearNDVI(decision?.ndvi_actual);
 
-      {/* 🆕 MODAL DEL GRÁFICO */}
-      {mostrarModalGrafico && loteGraficoId && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-4xl max-h-[90vh] flex flex-col">
-            {/* Header del modal */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  📊 Gráfico NDVI
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Lote: {lotes.find(l => l.id === loteGraficoId)?.nombre || 'Sin nombre'}
-                </p>
+                  const colorMap: Record<string, string> = {
+                    '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
+                    '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
+                    '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
+                  };
+                  const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
+
+                  return (
+                    <div
+                      key={lote.id}
+                      className={`rounded-lg p-2 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
+                      onClick={() => {
+                        setLoteSeleccionadoId(lote.id);
+                      }}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xl flex-shrink-0" title={decision?.motivo || 'Sin decisión'}>
+                          {semaforo}
+                        </span>
+                        <div className="truncate">
+                          <b className="truncate block text-gray-900 dark:text-white text-sm">{lote.nombre}</b>
+                          <span className="text-gray-500 dark:text-gray-400 text-xs">
+                            {formatearArea(lote.hectareas)} ha
+                            {ndvi !== 'N/A' && <> • {ndvi}</>}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex gap-1 flex-shrink-0 ml-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEditarLote(lote); }}
+                          className="text-blue-500 hover:text-blue-700 text-sm px-1"
+                          title="Editar lote"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEliminarLote(lote.id, lote.nombre); }}
+                          className="text-red-500 hover:text-red-700 text-sm px-1"
+                          title="Eliminar lote"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-gray-500 dark:text-gray-400 text-sm col-span-full text-center py-8">
+                  {cargandoLotes ? '🔄 Cargando lotes...' : searchQuery ? '🔍 No se encontró ningún campo' : '📭 No hay lotes en este campo'}
+                </div>
+              )}
+            </div>
+
+            {loteSeleccionadoId && (
+              <div className="mt-4">
+                <div key={`grafico-wrapper-${loteSeleccionadoId}`}>
+                  <GraficoNDVI
+                    loteId={loteSeleccionadoId}
+                    loteNombre={lotes.find(l => l.id === loteSeleccionadoId)?.nombre}
+                  />
+                </div>
               </div>
-              <button
-                onClick={cerrarModalGrafico}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                aria-label="Cerrar"
-              >
-                <svg className="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* Contenido del modal */}
-            <div className="flex-1 overflow-y-auto p-4">
-              <GraficoNDVI
-                loteId={loteGraficoId}
-                loteNombre={lotes.find(l => l.id === loteGraficoId)?.nombre}
-              />
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* MODAL DE EDICIÓN */}
       {mostrarModalEdicion && loteEditando && (
@@ -1238,7 +1236,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </div>
       )}
 
-      {/* MODAL DE NUEVO CAMPO */}
+      {/* 🆕 MODAL DE NUEVO CAMPO */}
       {mostrarModalNuevoCampo && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-xl">
@@ -1281,7 +1279,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         </div>
       )}
 
-      {/* MODAL DE BIENVENIDA (sin campos) */}
+      {/* 🆕 MODAL DE BIENVENIDA (sin campos) */}
       {mostrarBienvenida && !mostrarModalNuevoCampo && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9998] p-4">
           <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-6 max-w-sm w-full">
