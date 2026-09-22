@@ -81,12 +81,6 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
   // ESTADO PARA LA TAB ACTIVA (Gráfico vs Lotes)
   const [tabActiva, setTabActiva] = useState<'grafico' | 'lotes'>('lotes');
 
-  // 🆕 ESTADOS PARA MODAL DE NUEVO CAMPO Y BIENVENIDA
-  const [mostrarModalNuevoCampo, setMostrarModalNuevoCampo] = useState(false);
-  const [nombreNuevoCampo, setNombreNuevoCampo] = useState('');
-  const [mostrarBienvenida, setMostrarBienvenida] = useState(false);
-  const [cargandoCampos, setCargandoCampos] = useState(true);
-
   // ============================================
   // REFS
   // ============================================
@@ -407,23 +401,12 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     } catch (error) {
       console.error('Error cargando campos:', error);
       toast.error('Error al cargar los campos');
-    } finally {
-      if (mountedRef.current) setCargandoCampos(false);
     }
   }, []);
 
   useEffect(() => {
     cargarCampos();
   }, [cargarCampos]);
-
-  // 🆕 Mostrar modal de bienvenida si no hay campos (y ya terminó de cargar)
-  useEffect(() => {
-    if (!cargandoCampos && campos.length === 0) {
-      setMostrarBienvenida(true);
-    } else {
-      setMostrarBienvenida(false);
-    }
-  }, [cargandoCampos, campos.length]);
 
   // ============================================
   // EFECTO 1: CARGAR LOTES CUANDO CAMBIA EL CAMPO
@@ -838,25 +821,16 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     }
   };
 
-  // 🆕 Abrir modal para nombrar el campo
-  const abrirModalNuevoCampo = () => {
-    setNombreNuevoCampo('');
-    setMostrarModalNuevoCampo(true);
-  };
-
-  // 🆕 Confirmar creación del campo (desde el modal)
-  const confirmarNuevoCampo = async () => {
-    const nombre = nombreNuevoCampo.trim();
-    if (!nombre) {
+  const crearNuevoCampo = async () => {
+    const nombre = window.prompt('📌 Nombre del nuevo campo:', 'Mi Campo');
+    if (!nombre || !nombre.trim()) {
       toast.error('El nombre es obligatorio');
       return;
     }
 
     try {
-      setIsUpdating(true);
-
       const nuevoCampo = await crearCampo({
-        nombre,
+        nombre: nombre.trim(),
         ubicacion: '',
         latitud_centro: -32.1612,
         longitud_centro: -63.4616,
@@ -867,22 +841,11 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       setCampos(prev => [...prev, nuevoCampo]);
       setCampoSeleccionado(nuevoCampo);
       lastSelectedCampoRef.current = nuevoCampo;
-      setMostrarModalNuevoCampo(false);
-      setNombreNuevoCampo('');
-      setMostrarBienvenida(false);
-      toast.success(`✅ Campo "${nombre}" creado. Ahora dibujá tus lotes`);
+      toast.success(`✅ Campo "${nombre}" creado correctamente`);
     } catch (error: any) {
       console.error('Error creando campo:', error);
       toast.error('Error al crear campo: ' + (error?.response?.data?.error || error.message));
-    } finally {
-      if (mountedRef.current) setIsUpdating(false);
     }
-  };
-
-  // 🆕 Cancelar modal nuevo campo
-  const cancelarNuevoCampo = () => {
-    setMostrarModalNuevoCampo(false);
-    setNombreNuevoCampo('');
   };
 
   // ============================================
@@ -899,9 +862,8 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           {!modoDibujo ? (
             <button
               onClick={activarDibujo}
-              disabled={isUpdating || !campoSeleccionado}
-              title={!campoSeleccionado ? 'Primero creá un campo' : 'Dibujar lote'}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              disabled={isUpdating}
+              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
             >
               ✏️ Dibujar
             </button>
@@ -940,7 +902,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           ))}
         </select>
         <button
-          onClick={abrirModalNuevoCampo}
+          onClick={crearNuevoCampo}
           className="bg-gray-200 dark:bg-gray-700 px-3 py-1.5 rounded-lg text-xs hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           + Campo
@@ -1018,6 +980,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       {/* CONTENIDO DE LA TAB ACTIVA */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {tabActiva === 'grafico' ? (
+          // ─── TAB GRÁFICO ───
           <div>
             {loteSeleccionadoId ? (
               <div key={`grafico-wrapper-${loteSeleccionadoId}`}>
@@ -1033,6 +996,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
             )}
           </div>
         ) : (
+          // ─── TAB LOTES ───
           <div className="space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {filteredLotes.length > 0 ? (
@@ -1094,6 +1058,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
               )}
             </div>
 
+            {/* 🆕 Gráfico debajo de las cards */}
             {loteSeleccionadoId && (
               <div className="mt-4">
                 <div key={`grafico-wrapper-${loteSeleccionadoId}`}>
@@ -1232,76 +1197,6 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                 {isUpdating ? '⏳ Guardando...' : '💾 Guardar Lote'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🆕 MODAL DE NUEVO CAMPO */}
-      {mostrarModalNuevoCampo && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">📝 Nombrá tu campo</h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Poné un nombre para identificarlo
-            </p>
-            <input
-              type="text"
-              value={nombreNuevoCampo}
-              onChange={(e) => setNombreNuevoCampo(e.target.value)}
-              placeholder="Ej: Campo Norte"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  confirmarNuevoCampo();
-                }
-              }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-4"
-            />
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={cancelarNuevoCampo}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                onClick={confirmarNuevoCampo}
-                disabled={isUpdating || !nombreNuevoCampo.trim()}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
-              >
-                {isUpdating ? '⏳ Guardando...' : '💾 Crear campo'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🆕 MODAL DE BIENVENIDA (sin campos) */}
-      {mostrarBienvenida && !mostrarModalNuevoCampo && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[9998] p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 p-6 max-w-sm w-full">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">🌾</span>
-              </div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                Cargá tu campo
-              </h2>
-            </div>
-
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-5 leading-relaxed">
-              Un campo es tu establecimiento. Le ponés un nombre y después dibujás los lotes adentro.
-            </p>
-
-            <button
-              onClick={abrirModalNuevoCampo}
-              className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
-            >
-              + Cargar mi primer campo
-            </button>
           </div>
         </div>
       )}
