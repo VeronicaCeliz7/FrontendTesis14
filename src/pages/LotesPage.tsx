@@ -10,6 +10,7 @@ import {
 } from '../services/lotes.service';
 import { listarCampos, crearCampo, Campo } from '../services/campos.service';
 import GraficoNDVI from '../components/common/GraficoNDVI';
+import { LeyendaNDVI } from '../components/common/LeyendaNDVI';
 import { obtenerUltimaDecision } from '../services/decisiones.service';
 import { DecisionCorte } from '../types/DecisionCorte';
 import toast from 'react-hot-toast';
@@ -983,6 +984,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
             className="w-full h-full"
             style={{ backgroundColor: '#e8f0f8' }}
           />
+          <LeyendaNDVI visible={mostrarNDVI} />
           {errorMapa && (
             <div className="absolute inset-0 flex items-center justify-center bg-destructive/10">
               <p className="text-red-600 text-sm">❌ Error: {errorMapa}</p>
