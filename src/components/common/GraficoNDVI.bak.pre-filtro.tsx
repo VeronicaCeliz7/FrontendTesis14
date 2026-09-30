@@ -98,41 +98,9 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
         );
     }
 
-    // 🆕 Filtrar: 1 punto por día, priorizando Copernicus sobre Agro
-    const medicionesFiltradas: Medicion[] = [];
-    const diasVistos = new Set<string>();
-
-    // 1. Copernicus primero (fuente más confiable)
-    mediciones
-        .filter(m => m.fuente === 'copernicus')
-        .forEach(m => {
-            const dia = String(m.fecha).slice(0, 10);
-            if (!diasVistos.has(dia)) {
-                medicionesFiltradas.push(m);
-                diasVistos.add(dia);
-            }
-        });
-
-    // 2. Agro solo si no hay Copernicus para ese día
-    mediciones
-        .filter(m => m.fuente === 'openweather')
-        .forEach(m => {
-            const dia = String(m.fecha).slice(0, 10);
-            if (!diasVistos.has(dia)) {
-                medicionesFiltradas.push(m);
-                diasVistos.add(dia);
-            }
-        });
-
-    // 3. Ordenar por fecha ascendente
-    medicionesFiltradas.sort((a, b) =>
-        new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-    );
-
-    // 🆕 Usar medicionesFiltradas para todos los cálculos
-    const ultimoNDVI = medicionesFiltradas[medicionesFiltradas.length - 1]?.ndvi;
+    const ultimoNDVI = mediciones[mediciones.length - 1]?.ndvi;
     const ndviValido = typeof ultimoNDVI === 'number' && !isNaN(ultimoNDVI) ? ultimoNDVI : 0;
-    const fechaUltima = medicionesFiltradas[medicionesFiltradas.length - 1]?.fecha || '';
+    const fechaUltima = mediciones[mediciones.length - 1]?.fecha || '';
 
     const getEstadoCultivo = (ndvi: number) => {
         if (ndvi >= 0.6) return { texto: 'Excelente', color: 'text-green-600' };
@@ -143,14 +111,8 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
 
     const estado = getEstadoCultivo(ndviValido);
 
-    const medicionesValidas = medicionesFiltradas.filter(m => typeof m.ndvi === 'number' && !isNaN(m.ndvi));
-
-    // 🆕 Contar cuántas fuentes hay para la etiqueta
-    const fuentesUsadas = new Set(medicionesValidas.map(m => m.fuente));
-    const etiquetaFuente = fuentesUsadas.size === 1
-        ? Array.from(fuentesUsadas)[0]
-        : 'copernicus + openweather';
-
+    const medicionesValidas = mediciones.filter(m => typeof m.ndvi === 'number' && !isNaN(m.ndvi));
+    
     const chartData = {
         labels: medicionesValidas.map(m => new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })),
         datasets: [
@@ -186,10 +148,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
             tooltip: {
                 callbacks: {
                     label: function (context: any) {
-                        const index = context.dataIndex;
-                        const medicion = medicionesValidas[index];
-                        const fuente = medicion?.fuente || 'desconocida';
-                        return `NDVI: ${context.parsed.y.toFixed(3)} (${fuente})`;
+                        return `NDVI: ${context.parsed.y.toFixed(3)}`;
                     },
                 },
             },
@@ -246,7 +205,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
             <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>📅 {medicionesValidas.length} mediciones</span>
-                    <span>🛰️ Fuente: {etiquetaFuente}</span>
+                    <span>🛰️ Fuente: {mediciones[0]?.fuente || 'sentinel-2'}</span>
                     <span>📈 Promedio: {(medicionesValidas.reduce((sum, m) => sum + m.ndvi, 0) / medicionesValidas.length).toFixed(3)}</span>
                 </div>
             </div>
