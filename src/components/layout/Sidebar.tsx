@@ -8,7 +8,7 @@ const navItems = [
   { path: '/lotes', label: 'Mis Lotes', icon: Map },
   { path: '/labores', label: 'Labores', icon: Sprout },
   { path: '/cortes', label: 'Cortes', icon: Calendar },
-  { path: '/alertas', label: 'Alertas', icon: AlertCircle, badge: 3 },
+  { path: '/alertas', label: 'Alertas', icon: AlertCircle }, 
   { path: '/configuracion', label: 'Configuración', icon: Settings },
 ];
 
