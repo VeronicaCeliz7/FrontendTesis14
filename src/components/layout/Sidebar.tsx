@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Home, Map, Calendar, AlertCircle, Sprout, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: Home },
@@ -73,11 +73,7 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
                   )}
                 />
                 <span className="text-base font-semibold">{item.label}</span>
-                {item.badge && (
-                  <Badge className="ml-auto bg-red-500 hover:bg-red-600 text-white border-0 px-3 py-1 text-sm font-bold">
-                    {item.badge}
-                  </Badge>
-                )}
+               
               </>
             )}
           </NavLink>
