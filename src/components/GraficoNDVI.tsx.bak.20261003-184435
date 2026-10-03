@@ -98,57 +98,64 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
         );
     }
 
-    // ✅ NUEVO: solo Copernicus (sin Agro)
-    const medicionesFiltradas: Medicion[] = mediciones
+    // 🆕 Filtrar: 1 punto por día, priorizando Copernicus sobre Agro
+    const medicionesFiltradas: Medicion[] = [];
+    const diasVistos = new Set<string>();
+
+    // 1. Copernicus primero (fuente más confiable)
+    mediciones
         .filter(m => m.fuente === 'copernicus')
-        .filter(m => m.ndvi !== null && m.ndvi !== undefined && !isNaN(m.ndvi))
-        .sort((a, b) =>
-            new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-        );
+        .forEach(m => {
+            const dia = String(m.fecha).slice(0, 10);
+            if (!diasVistos.has(dia)) {
+                medicionesFiltradas.push(m);
+                diasVistos.add(dia);
+            }
+        });
 
-    // ✅ Si no hay Copernicus, mostrar mensaje
-    if (medicionesFiltradas.length === 0) {
-        return (
-            <div className="flex justify-center items-center h-64 flex-col gap-2">
-                <p className="text-gray-500">No hay mediciones de Copernicus para este lote</p>
-                <p className="text-sm text-gray-400">Esperando la próxima recolección satelital</p>
-            </div>
-        );
-    }
+    // 2. Agro solo si no hay Copernicus para ese día
+    mediciones
+        .filter(m => m.fuente === 'openweather')
+        .forEach(m => {
+            const dia = String(m.fecha).slice(0, 10);
+            if (!diasVistos.has(dia)) {
+                medicionesFiltradas.push(m);
+                diasVistos.add(dia);
+            }
+        });
 
-    // ✅ Usar medicionesFiltradas para todos los cálculos
+    // 3. Ordenar por fecha ascendente
+    medicionesFiltradas.sort((a, b) =>
+        new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+    );
+
+    // 🆕 Usar medicionesFiltradas para todos los cálculos
     const ultimoNDVI = medicionesFiltradas[medicionesFiltradas.length - 1]?.ndvi;
     const ndviValido = typeof ultimoNDVI === 'number' && !isNaN(ultimoNDVI) ? ultimoNDVI : 0;
     const fechaUltima = medicionesFiltradas[medicionesFiltradas.length - 1]?.fecha || '';
 
-    // ✅ Escala de alfalfa (alineada con el backend)
     const getEstadoCultivo = (ndvi: number) => {
-        if (ndvi >= 0.80) return { texto: 'Máximo / saturado', color: 'text-yellow-600' };
-        if (ndvi >= 0.65) return { texto: 'Ventana de corte', color: 'text-green-600' };
-        if (ndvi >= 0.45) return { texto: 'Crecimiento', color: 'text-blue-600' };
-        if (ndvi >= 0.25) return { texto: 'Rebrote', color: 'text-yellow-600' };
-        return { texto: 'Rastrojo / post-corte', color: 'text-gray-600' };
+        if (ndvi >= 0.6) return { texto: 'Excelente', color: 'text-green-600' };
+        if (ndvi >= 0.4) return { texto: 'Bueno', color: 'text-blue-600' };
+        if (ndvi >= 0.2) return { texto: 'Regular', color: 'text-yellow-600' };
+        return { texto: 'Bajo', color: 'text-red-600' };
     };
 
     const estado = getEstadoCultivo(ndviValido);
 
     const medicionesValidas = medicionesFiltradas.filter(m => typeof m.ndvi === 'number' && !isNaN(m.ndvi));
 
-    // ✅ Siempre Copernicus
-    const etiquetaFuente = 'Copernicus';
+    // 🆕 Contar cuántas fuentes hay para la etiqueta
+    const fuentesUsadas = new Set(medicionesValidas.map(m => m.fuente));
+    const etiquetaFuente = fuentesUsadas.size === 1
+        ? Array.from(fuentesUsadas)[0]
+        : 'copernicus + openweather';
 
     const chartData = {
-        labels: medicionesValidas.map(m => {
-            const fecha = new Date(m.fecha);
-            return fecha.toLocaleDateString('es-AR', {
-                day: '2-digit',
-                month: 'short',
-                timeZone: 'America/Argentina/Buenos_Aires'
-            });
-        }),
+        labels: medicionesValidas.map(m => new Date(m.fecha).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })),
         datasets: [
             {
-                label: 'NDVI (Copernicus)',
+                label: 'NDVI',
                 data: medicionesValidas.map(m => m.ndvi),
                 borderColor: '#22c55e',
                 backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -156,11 +163,10 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                 tension: 0.3,
                 pointBackgroundColor: medicionesValidas.map(m => {
                     const ndvi = m.ndvi;
-                    if (ndvi >= 0.80) return '#eab308';
-                    if (ndvi >= 0.65) return '#22c55e';
-                    if (ndvi >= 0.45) return '#3b82f6';
-                    if (ndvi >= 0.25) return '#eab308';
-                    return '#6b7280';
+                    if (ndvi >= 0.6) return '#22c55e';
+                    if (ndvi >= 0.4) return '#3b82f6';
+                    if (ndvi >= 0.2) return '#eab308';
+                    return '#ef4444';
                 }),
             },
         ],
@@ -182,7 +188,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                     label: function (context: any) {
                         const index = context.dataIndex;
                         const medicion = medicionesValidas[index];
-                        const fuente = medicion?.fuente || 'copernicus';
+                        const fuente = medicion?.fuente || 'desconocida';
                         return `NDVI: ${context.parsed.y.toFixed(3)} (${fuente})`;
                     },
                 },
@@ -225,7 +231,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                         {estado.texto}
                     </span>
                     <p className="text-xs text-gray-400">
-                        Última medición: {fechaUltima ? new Date(fechaUltima).toLocaleDateString('es-AR', { timeZone: 'America/Argentina/Buenos_Aires' }) : 'Sin fecha'}
+                        Última medición: {fechaUltima ? new Date(fechaUltima).toLocaleDateString('es-AR') : 'Sin fecha'}
                     </p>
                     <p className="text-sm font-bold text-gray-700 dark:text-gray-300">
                         NDVI: {ndviValido.toFixed(3)}
