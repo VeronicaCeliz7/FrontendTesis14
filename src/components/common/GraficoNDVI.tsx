@@ -134,6 +134,10 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
 
     const medicionesValidas = medicionesFiltradas.filter(m => typeof m.ndvi === 'number' && !isNaN(m.ndvi));
 
+    // ✅ Contar cortes y outliers
+    const cortesDetectados = medicionesValidas.filter(m => m.es_corte === true).length;
+    const outliersDetectados = medicionesValidas.filter(m => m.es_outlier === true).length;
+
     // ✅ Siempre Copernicus
     const etiquetaFuente = 'Copernicus';
 
@@ -153,14 +157,33 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                 borderColor: '#22c55e',
                 backgroundColor: 'rgba(34, 197, 94, 0.1)',
                 fill: true,
-                tension: 0.3,
+                tension: 0,
+                // ✅ Tamaño del punto: más grande si es corte u outlier
+                pointRadius: medicionesValidas.map(m => {
+                    if (m.es_corte) return 8;
+                    if (m.es_outlier) return 7;
+                    return 4;
+                }),
+                // ✅ Color del punto: rojo si es corte, gris si es outlier
                 pointBackgroundColor: medicionesValidas.map(m => {
+                    if (m.es_corte) return '#ef4444';       // 🔴 rojo = corte
+                    if (m.es_outlier) return '#9ca3af';     // ⚪ gris = outlier
                     const ndvi = m.ndvi;
                     if (ndvi >= 0.80) return '#eab308';
                     if (ndvi >= 0.65) return '#22c55e';
                     if (ndvi >= 0.45) return '#3b82f6';
                     if (ndvi >= 0.25) return '#eab308';
                     return '#6b7280';
+                }),
+                pointBorderColor: medicionesValidas.map(m => {
+                    if (m.es_corte) return '#991b1b';       // borde rojo oscuro
+                    if (m.es_outlier) return '#4b5563';     // borde gris oscuro
+                    return '#ffffff';
+                }),
+                pointBorderWidth: medicionesValidas.map(m => {
+                    if (m.es_corte) return 2;
+                    if (m.es_outlier) return 2;
+                    return 1;
                 }),
             },
         ],
@@ -183,7 +206,10 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                         const index = context.dataIndex;
                         const medicion = medicionesValidas[index];
                         const fuente = medicion?.fuente || 'copernicus';
-                        return `NDVI: ${context.parsed.y.toFixed(3)} (${fuente})`;
+                        let label = `NDVI: ${context.parsed.y.toFixed(3)} (${fuente})`;
+                        if (medicion?.es_corte) label += ' ✂️ CORTE';
+                        if (medicion?.es_outlier) label += ' ⚠️ Dato dudoso';
+                        return label;
                     },
                 },
             },
@@ -243,6 +269,23 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                     <span>🛰️ Fuente: {etiquetaFuente}</span>
                     <span>📈 Promedio: {(medicionesValidas.reduce((sum, m) => sum + m.ndvi, 0) / medicionesValidas.length).toFixed(3)}</span>
                 </div>
+                {/* ✅ Leyenda de cortes y outliers */}
+                {(cortesDetectados > 0 || outliersDetectados > 0) && (
+                    <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        {cortesDetectados > 0 && (
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
+                                {cortesDetectados} corte{cortesDetectados > 1 ? 's' : ''} detectado{cortesDetectados > 1 ? 's' : ''}
+                            </span>
+                        )}
+                        {outliersDetectados > 0 && (
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full bg-gray-400 inline-block"></span>
+                                {outliersDetectados} dato{outliersDetectados > 1 ? 's' : ''} dudoso{outliersDetectados > 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

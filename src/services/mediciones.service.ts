@@ -9,6 +9,9 @@ export interface Medicion {
     imagen_url: string;
     fuente: string;
     created_at: string;
+    baja_confianza?: boolean;   // ✅ NUEVO
+    es_corte?: boolean;         // ✅ NUEVO
+    es_outlier?: boolean;       // ✅ NUEVO
 }
 
 // Listar todas las mediciones de un lote

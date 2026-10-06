@@ -21,8 +21,30 @@ const formatearNDVI = (ndvi: any): string => {
   return isNaN(num) ? 'N/A' : num.toFixed(3);
 };
 
+// ✅ FORMATEAR FECHA CON TIMEZONE ARGENTINA
+const formatearFecha = (fecha: any): string => {
+  if (!fecha) return 'Sin fecha';
+  try {
+    return new Date(fecha).toLocaleDateString('es-AR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'America/Argentina/Buenos_Aires'
+    });
+  } catch {
+    return 'Sin fecha';
+  }
+};
+
 const DashboardPage = () => {
-  const [resumen, setResumen] = useState({ verde: 0, amarillo: 0, rojo: 0, total: 0 });
+  const [resumen, setResumen] = useState({
+    total: 0,
+    ventana_corte: 0,
+    crecimiento: 0,
+    rebrote: 0,
+    rastrojo: 0,
+    maximo: 0
+  });
   const [decisionesRecientes, setDecisionesRecientes] = useState<DecisionCorte[]>([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -56,9 +78,11 @@ const DashboardPage = () => {
 
   // Datos para la dona
   const datosDona = [
-    { name: '🟢 Corte', value: resumen.verde, color: '#22c55e' },
-    { name: '🟡 Esperar', value: resumen.amarillo, color: '#eab308' },
-    { name: '🔴 Riesgo', value: resumen.rojo, color: '#ef4444' }
+    { name: 'Ventana de corte', value: resumen.ventana_corte, color: '#22c55e' },
+    { name: 'Crecimiento', value: resumen.crecimiento, color: '#3b82f6' },
+    { name: 'Rebrote', value: resumen.rebrote, color: '#eab308' },
+    { name: 'Rastrojo', value: resumen.rastrojo, color: '#64748b' },
+    { name: 'Máximo', value: resumen.maximo, color: '#f97316' }
   ].filter(item => item.value > 0);
 
   if (cargando) {
@@ -95,22 +119,26 @@ const DashboardPage = () => {
       <h1 className="text-3xl font-bold text-gray-800">📊 Dashboard de Lotes</h1>
 
       {/* TARJETAS DE RESUMEN */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl shadow p-4 border-l-4 border-blue-500">
-          <div className="text-sm text-gray-500">Total de Lotes</div>
-          <div className="text-3xl font-bold">{resumen.total}</div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Total</div>
+          <div className="text-2xl font-semibold text-gray-900 mt-1">{resumen.total}</div>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 border-l-4 border-green-500">
-          <div className="text-sm text-gray-500">🟢 Listos para Cortar</div>
-          <div className="text-3xl font-bold text-green-600">{resumen.verde}</div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm border-l-4 border-l-green-500">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Ventana de corte</div>
+          <div className="text-2xl font-semibold text-gray-900 mt-1">{resumen.ventana_corte}</div>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 border-l-4 border-yellow-500">
-          <div className="text-sm text-gray-500">🟡 En Espera</div>
-          <div className="text-3xl font-bold text-yellow-600">{resumen.amarillo}</div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm border-l-4 border-l-blue-500">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Crecimiento</div>
+          <div className="text-2xl font-semibold text-gray-900 mt-1">{resumen.crecimiento}</div>
         </div>
-        <div className="bg-white rounded-xl shadow p-4 border-l-4 border-red-500">
-          <div className="text-sm text-gray-500">🔴 En Riesgo</div>
-          <div className="text-3xl font-bold text-red-600">{resumen.rojo}</div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm border-l-4 border-l-amber-500">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rebrote</div>
+          <div className="text-2xl font-semibold text-gray-900 mt-1">{resumen.rebrote}</div>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm border-l-4 border-l-slate-500">
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rastrojo</div>
+          <div className="text-2xl font-semibold text-gray-900 mt-1">{resumen.rastrojo}</div>
         </div>
       </div>
 
@@ -118,7 +146,7 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* DONA */}
         <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Estado de Corte</h2>
+          <h2 className="text-lg font-semibold mb-4">Distribución de estados</h2>
           {datosDona.length > 0 ? (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -154,7 +182,7 @@ const DashboardPage = () => {
 
         {/* ÚLTIMAS DECISIONES */}
         <div className="bg-white rounded-xl shadow p-6">
-          <h2 className="text-lg font-semibold mb-4">Últimas Decisiones</h2>
+          <h2 className="text-lg font-semibold mb-4">Últimas decisiones</h2>
           <div className="overflow-auto max-h-[300px]">
             {decisionesRecientes.length > 0 ? (
               <table className="w-full text-sm">
@@ -162,8 +190,8 @@ const DashboardPage = () => {
                   <tr>
                     <th className="text-left p-2">Lote</th>
                     <th className="text-left p-2">Fecha</th>
-                    <th className="text-center p-2">Estado</th>
-                    <th className="text-left p-2">NDVI</th>
+                    <th className="text-left p-2">Estado</th>
+                    <th className="text-right p-2">NDVI</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -171,12 +199,12 @@ const DashboardPage = () => {
                     <tr key={dec.id} className="border-t hover:bg-gray-50">
                       <td className="p-2 font-medium">Lote #{dec.lote_id}</td>
                       <td className="p-2 text-gray-500">
-                        {new Date(dec.fecha_analisis).toLocaleDateString()}
+                        {formatearFecha(dec.fecha_analisis)}
                       </td>
-                      <td className="p-2 text-center">
-                        <span className="text-2xl">{dec.semaforo}</span>
+                      <td className="p-2 text-gray-700">
+                        {dec.estado || 'Sin estado'}
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 text-right font-mono">
                         {formatearNDVI(dec.ndvi_actual)}
                       </td>
                     </tr>

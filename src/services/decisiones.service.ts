@@ -6,10 +6,6 @@ export type { DecisionCorte };
 // =============================================
 // CONFIGURACIÓN BASE
 // =============================================
-//const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api/internal';
-
-
-
 
 export interface DecisionesResponse {
     success: boolean;
@@ -68,21 +64,25 @@ export async function obtenerDecisionesRecientes(): Promise<DecisionCorte[]> {
  * Obtener el resumen de decisiones para todos los lotes
  */
 export async function obtenerResumenDecisiones(): Promise<{
-    verde: number;
-    amarillo: number;
-    rojo: number;
     total: number;
+    ventana_corte: number;
+    crecimiento: number;
+    rebrote: number;
+    rastrojo: number;
+    maximo: number;
 }> {
     try {
         const response = await api.get<{
-            verde: number;
-            amarillo: number;
-            rojo: number;
             total: number;
+            ventana_corte: number;
+            crecimiento: number;
+            rebrote: number;
+            rastrojo: number;
+            maximo: number;
         }>('/decisiones/resumen');
         return response.data;
     } catch (error: any) {
         console.error('❌ Error obteniendo resumen de decisiones:', error);
-        return { verde: 0, amarillo: 0, rojo: 0, total: 0 };
+        return { total: 0, ventana_corte: 0, crecimiento: 0, rebrote: 0, rastrojo: 0, maximo: 0 };
     }
 }
