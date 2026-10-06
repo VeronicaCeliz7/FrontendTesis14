@@ -267,7 +267,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                 <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
                     <span>📅 {medicionesValidas.length} mediciones</span>
                     <span>🛰️ Fuente: {etiquetaFuente}</span>
-                    <span>📈 Promedio: {(medicionesValidas.reduce((sum, m) => sum + m.ndvi, 0) / medicionesValidas.length).toFixed(3)}</span>
+                    <span>📈 Mediana: {(medicionesValidas.reduce((sum, m) => sum + m.ndvi, 0) / medicionesValidas.length).toFixed(3)}</span>
                 </div>
                 {/* ✅ Leyenda de cortes y outliers */}
                 {(cortesDetectados > 0 || outliersDetectados > 0) && (
