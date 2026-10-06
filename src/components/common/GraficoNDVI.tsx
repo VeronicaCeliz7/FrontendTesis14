@@ -98,7 +98,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
         );
     }
 
-    // ✅ NUEVO: solo Copernicus (sin Agro)
+    // ✅ Solo Copernicus
     const medicionesFiltradas: Medicion[] = mediciones
         .filter(m => m.fuente === 'copernicus')
         .filter(m => m.ndvi !== null && m.ndvi !== undefined && !isNaN(m.ndvi))
@@ -106,7 +106,6 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
             new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
         );
 
-    // ✅ Si no hay Copernicus, mostrar mensaje
     if (medicionesFiltradas.length === 0) {
         return (
             <div className="flex justify-center items-center h-64 flex-col gap-2">
@@ -116,12 +115,10 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
         );
     }
 
-    // ✅ Usar medicionesFiltradas para todos los cálculos
     const ultimoNDVI = medicionesFiltradas[medicionesFiltradas.length - 1]?.ndvi;
     const ndviValido = typeof ultimoNDVI === 'number' && !isNaN(ultimoNDVI) ? ultimoNDVI : 0;
     const fechaUltima = medicionesFiltradas[medicionesFiltradas.length - 1]?.fecha || '';
 
-    // ✅ Escala de alfalfa (alineada con el backend)
     const getEstadoCultivo = (ndvi: number) => {
         if (ndvi >= 0.80) return { texto: 'Máximo / saturado', color: 'text-yellow-600' };
         if (ndvi >= 0.65) return { texto: 'Ventana de corte', color: 'text-green-600' };
@@ -134,11 +131,11 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
 
     const medicionesValidas = medicionesFiltradas.filter(m => typeof m.ndvi === 'number' && !isNaN(m.ndvi));
 
-    // ✅ Contar cortes y outliers
+    // ✅ Contar cortes, outliers y baja confianza
     const cortesDetectados = medicionesValidas.filter(m => m.es_corte === true).length;
     const outliersDetectados = medicionesValidas.filter(m => m.es_outlier === true).length;
+    const bajaConfianzaDetectados = medicionesValidas.filter(m => m.baja_confianza === true).length;
 
-    // ✅ Siempre Copernicus
     const etiquetaFuente = 'Copernicus';
 
     const chartData = {
@@ -162,12 +159,14 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                 pointRadius: medicionesValidas.map(m => {
                     if (m.es_corte) return 8;
                     if (m.es_outlier) return 7;
+                    if (m.baja_confianza) return 4;
                     return 4;
                 }),
-                // ✅ Color del punto: rojo si es corte, gris si es outlier
+                // ✅ Color del punto
                 pointBackgroundColor: medicionesValidas.map(m => {
-                    if (m.es_corte) return '#ef4444';       // 🔴 rojo = corte
-                    if (m.es_outlier) return '#9ca3af';     // ⚪ gris = outlier
+                    if (m.es_corte) return '#ef4444';            // 🔴 rojo = corte
+                    if (m.es_outlier) return '#9ca3af';          // ⚪ gris = outlier
+                    if (m.baja_confianza) return '#fbbf24';      // 🟡 amarillo = baja confianza
                     const ndvi = m.ndvi;
                     if (ndvi >= 0.80) return '#eab308';
                     if (ndvi >= 0.65) return '#22c55e';
@@ -176,14 +175,21 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                     return '#6b7280';
                 }),
                 pointBorderColor: medicionesValidas.map(m => {
-                    if (m.es_corte) return '#991b1b';       // borde rojo oscuro
-                    if (m.es_outlier) return '#4b5563';     // borde gris oscuro
+                    if (m.es_corte) return '#991b1b';
+                    if (m.es_outlier) return '#4b5563';
+                    if (m.baja_confianza) return '#92400e';
                     return '#ffffff';
                 }),
                 pointBorderWidth: medicionesValidas.map(m => {
                     if (m.es_corte) return 2;
                     if (m.es_outlier) return 2;
+                    if (m.baja_confianza) return 2;
                     return 1;
+                }),
+                // ✅ Borde punteado para baja confianza
+                pointStyle: medicionesValidas.map(m => {
+                    if (m.baja_confianza) return 'rectRot';
+                    return 'circle';
                 }),
             },
         ],
@@ -209,6 +215,7 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                         let label = `NDVI: ${context.parsed.y.toFixed(3)} (${fuente})`;
                         if (medicion?.es_corte) label += ' ✂️ CORTE';
                         if (medicion?.es_outlier) label += ' ⚠️ Dato dudoso';
+                        if (medicion?.baja_confianza) label += ' ⚠️ Baja confianza';
                         return label;
                     },
                 },
@@ -269,9 +276,9 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                     <span>🛰️ Fuente: {etiquetaFuente}</span>
                     <span>📈 Mediana: {(medicionesValidas.reduce((sum, m) => sum + m.ndvi, 0) / medicionesValidas.length).toFixed(3)}</span>
                 </div>
-                {/* ✅ Leyenda de cortes y outliers */}
-                {(cortesDetectados > 0 || outliersDetectados > 0) && (
-                    <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400 mt-2">
+                {/* ✅ Leyenda de cortes, outliers y baja confianza */}
+                {(cortesDetectados > 0 || outliersDetectados > 0 || bajaConfianzaDetectados > 0) && (
+                    <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400 mt-2 flex-wrap">
                         {cortesDetectados > 0 && (
                             <span className="flex items-center gap-1">
                                 <span className="w-3 h-3 rounded-full bg-red-500 inline-block"></span>
@@ -282,6 +289,12 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
                             <span className="flex items-center gap-1">
                                 <span className="w-3 h-3 rounded-full bg-gray-400 inline-block"></span>
                                 {outliersDetectados} dato{outliersDetectados > 1 ? 's' : ''} dudoso{outliersDetectados > 1 ? 's' : ''}
+                            </span>
+                        )}
+                        {bajaConfianzaDetectados > 0 && (
+                            <span className="flex items-center gap-1">
+                                <span className="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span>
+                                {bajaConfianzaDetectados} con baja confianza
                             </span>
                         )}
                     </div>
