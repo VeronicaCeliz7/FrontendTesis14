@@ -1,6 +1,6 @@
 // src/components/forms/LaborForm.tsx
 import { useState, useRef } from 'react';
-import { crearLabor, CrearLaborData } from '../../services/labores.service';
+import { crearLabor, actualizarLabor, CrearLaborData } from '../../services/labores.service';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -15,8 +15,44 @@ import {
 import { FileText, X, Loader2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+// =============================================
+// TIPOS
+// =============================================
+interface LaborInicial {
+    id: number;
+    lote_id: number;
+    categoria: string;
+    tipo: string;
+    fecha: string;
+    producto?: string;
+    dosis?: number;
+    plaga?: string;
+    semilla?: string;
+    observaciones?: string;
+    metadata?: {
+        operador?: string;
+        maquinaria?: string;
+        tipo_maquina?: string;
+        clasificacion?: string;
+        marca_modelo?: string;
+        hectareas?: number;
+        horas?: number;
+        unidad?: string;
+        costo?: number;
+        cantidad_total?: number;
+        calidad?: {
+            excelente?: number;
+            buena?: number;
+            media?: number;
+        };
+        receta_url?: string;
+        fotos?: string[];
+    };
+}
+
 interface LaborFormProps {
     loteId: number;
+    laborInicial?: LaborInicial | null;
     onSuccess: () => void;
     onCancel: () => void;
 }
@@ -86,34 +122,70 @@ function capitalizarPrimera(valor: string) {
     return valor.charAt(0).toUpperCase() + valor.slice(1);
 }
 
-const LaborForm = ({ loteId, onSuccess, onCancel }: LaborFormProps) => {
+// =============================================
+// Helper: extraer adjuntos del laborInicial
+// =============================================
+function extraerAdjuntos(labor?: LaborInicial | null): string[] {
+    if (!labor?.metadata) return [];
+    const urls: string[] = [];
+    if (labor.metadata.receta_url) urls.push(labor.metadata.receta_url);
+    if (labor.metadata.fotos) urls.push(...labor.metadata.fotos);
+    return urls;
+}
+
+// =============================================
+// Helper: convertir número a string para inputs
+// =============================================
+function numToString(n: number | undefined | null): string {
+    if (n === undefined || n === null) return '';
+    return String(n);
+}
+
+const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps) => {
     const { token } = useAuth();
     const archivoInputRef = useRef<HTMLInputElement>(null);
 
-    const [categoria, setCategoria] = useState('');
-    const [tipo, setTipo] = useState('');
-    const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
-    const [producto, setProducto] = useState('');
-    const [dosis, setDosis] = useState('');
-    const [unidad, setUnidad] = useState('L/ha');
-    const [plaga, setPlaga] = useState('');
-    const [semilla, setSemilla] = useState('');
-    const [operador, setOperador] = useState('');
-    const [maquinaria, setMaquinaria] = useState('');
-    const [tipoMaquina, setTipoMaquina] = useState('');
-    const [clasificacionMaquina, setClasificacionMaquina] = useState('');
-    const [marcaModelo, setMarcaModelo] = useState('');
-    const [hectareas, setHectareas] = useState('');
-    const [horas, setHoras] = useState('');
-    const [costo, setCosto] = useState('');
-    const [cantidadTotal, setCantidadTotal] = useState('');
-    const [calidadExcelente, setCalidadExcelente] = useState('');
-    const [calidadBuena, setCalidadBuena] = useState('');
-    const [calidadMedia, setCalidadMedia] = useState('');
-    const [observaciones, setObservaciones] = useState('');
+    const esEdicion = !!laborInicial;
 
-    // Un solo array de adjuntos
-    const [adjuntosUrls, setAdjuntosUrls] = useState<string[]>([]);
+    // =============================================
+    // ESTADO (inicializado con laborInicial si existe)
+    // =============================================
+    const [categoria, setCategoria] = useState(laborInicial?.categoria || '');
+    const [tipo, setTipo] = useState(laborInicial?.tipo || '');
+    const [fecha, setFecha] = useState(
+        laborInicial?.fecha
+            ? laborInicial.fecha.split('T')[0]
+            : new Date().toISOString().split('T')[0]
+    );
+    const [producto, setProducto] = useState(laborInicial?.producto || '');
+    const [dosis, setDosis] = useState(numToString(laborInicial?.dosis));
+    const [unidad, setUnidad] = useState(laborInicial?.metadata?.unidad || 'L/ha');
+    const [plaga, setPlaga] = useState(laborInicial?.plaga || '');
+    const [semilla, setSemilla] = useState(laborInicial?.semilla || '');
+    const [operador, setOperador] = useState(laborInicial?.metadata?.operador || '');
+    const [maquinaria, setMaquinaria] = useState(laborInicial?.metadata?.maquinaria || '');
+    const [tipoMaquina, setTipoMaquina] = useState(laborInicial?.metadata?.tipo_maquina || '');
+    const [clasificacionMaquina, setClasificacionMaquina] = useState(laborInicial?.metadata?.clasificacion || '');
+    const [marcaModelo, setMarcaModelo] = useState(laborInicial?.metadata?.marca_modelo || '');
+    const [hectareas, setHectareas] = useState(numToString(laborInicial?.metadata?.hectareas));
+    const [horas, setHoras] = useState(numToString(laborInicial?.metadata?.horas));
+    const [costo, setCosto] = useState(numToString(laborInicial?.metadata?.costo));
+    const [cantidadTotal, setCantidadTotal] = useState(
+        numToString(laborInicial?.metadata?.cantidad_total)
+    );
+    const [calidadExcelente, setCalidadExcelente] = useState(
+        numToString(laborInicial?.metadata?.calidad?.excelente)
+    );
+    const [calidadBuena, setCalidadBuena] = useState(
+        numToString(laborInicial?.metadata?.calidad?.buena)
+    );
+    const [calidadMedia, setCalidadMedia] = useState(
+        numToString(laborInicial?.metadata?.calidad?.media)
+    );
+    const [observaciones, setObservaciones] = useState(laborInicial?.observaciones || '');
+
+    // Adjuntos: si es edición, precargar los del laborInicial
+    const [adjuntosUrls, setAdjuntosUrls] = useState<string[]>(extraerAdjuntos(laborInicial));
     const [subiendo, setSubiendo] = useState(false);
 
     // Modal de vista previa
@@ -174,7 +246,7 @@ const LaborForm = ({ loteId, onSuccess, onCancel }: LaborFormProps) => {
     };
 
     // =============================================
-    // SUBMIT
+    // SUBMIT (crear o editar según modo)
     // =============================================
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -233,8 +305,14 @@ const LaborForm = ({ loteId, onSuccess, onCancel }: LaborFormProps) => {
                 metadata_extra: Object.keys(metadataExtra).length > 0 ? metadataExtra : undefined,
             };
 
-            await crearLabor(data, token!);
-            toast.success('Labor registrada');
+            if (esEdicion && laborInicial) {
+                await actualizarLabor(laborInicial.id, { ...data, lote_id: loteId }, token!);
+                toast.success('Labor actualizada');
+            } else {
+                await crearLabor(data, token!);
+                toast.success('Labor registrada');
+            }
+
             onSuccess();
         } catch (err: any) {
             console.error(err);
@@ -568,9 +646,17 @@ const LaborForm = ({ loteId, onSuccess, onCancel }: LaborFormProps) => {
                 </div>
 
                 <div className="flex gap-3 pt-4 border-t">
-                    <Button type="button" variant="outline" onClick={onCancel} disabled={cargando} className="flex-1">Cancelar</Button>
+                    <Button type="button" variant="outline" onClick={onCancel} disabled={cargando} className="flex-1">
+                        Cancelar
+                    </Button>
                     <Button type="submit" disabled={cargando} className="flex-1 bg-green-600 hover:bg-green-700">
-                        {cargando ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" />Guardando...</>) : ('Guardar Labor')}
+                        {cargando ? (
+                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
+                        ) : esEdicion ? (
+                            'Actualizar Labor'
+                        ) : (
+                            'Guardar Labor'
+                        )}
                     </Button>
                 </div>
             </form>

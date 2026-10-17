@@ -49,7 +49,7 @@ import {
     DialogTitle,
 } from '../components/ui/dialog';
 import {
-    Eye, Trash2, Plus, Settings2, ArrowUpDown,
+    Eye, Trash2, Plus, Settings2, ArrowUpDown, Pencil,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -161,7 +161,11 @@ const LaboresPage = () => {
     const [lotes, setLotes] = useState<Lote[]>([]);
     const [labores, setLabores] = useState<Labor[]>([]);
     const [cargando, setCargando] = useState(false);
-    const [modalAbierto, setModalAbierto] = useState(false);
+
+    // Modales
+    const [modalCrearAbierto, setModalCrearAbierto] = useState(false);
+    const [laborAEditar, setLaborAEditar] = useState<Labor | null>(null);
+
     const [loteSeleccionadoId, setLoteSeleccionadoId] = useState<number | null>(null);
     const [laborAEliminar, setLaborAEliminar] = useState<Labor | null>(null);
     const [laborDetalle, setLaborDetalle] = useState<Labor | null>(null);
@@ -377,7 +381,7 @@ const LaboresPage = () => {
                     </DropdownMenu>
 
                     <Button
-                        onClick={() => setModalAbierto(true)}
+                        onClick={() => setModalCrearAbierto(true)}
                         className="bg-blue-600 hover:bg-blue-700"
                     >
                         <Plus className="mr-2 h-4 w-4" /> Nueva Labor
@@ -385,7 +389,7 @@ const LaboresPage = () => {
                 </div>
             </div>
 
-            {/* Filtros (sin categoría) */}
+            {/* Filtros */}
             <Card className="mb-6">
                 <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -439,7 +443,7 @@ const LaboresPage = () => {
                     <CardContent>
                         <p className="text-gray-500">No hay labores registradas para este lote.</p>
                         <Button
-                            onClick={() => setModalAbierto(true)}
+                            onClick={() => setModalCrearAbierto(true)}
                             variant="outline"
                             className="mt-4"
                         >
@@ -515,7 +519,7 @@ const LaboresPage = () => {
                                     <TableRow key={labor.id}>
                                         {ver('fecha') && (
                                             <TableCell className="whitespace-nowrap">
-                                                {new Date(labor.fecha).toLocaleDateString()}
+                                                {new Date(labor.fecha).toLocaleDateString('es-AR')}
                                             </TableCell>
                                         )}
                                         {ver('categoria') && (
@@ -610,6 +614,15 @@ const LaboresPage = () => {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
+                                                        onClick={() => setLaborAEditar(labor)}
+                                                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                        title="Editar"
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
                                                         onClick={() => setLaborAEliminar(labor)}
                                                         className="text-red-500 hover:text-red-700 hover:bg-red-50"
                                                         title="Eliminar"
@@ -627,18 +640,31 @@ const LaboresPage = () => {
                 </Card>
             )}
 
-            {/* Modal crear */}
+            {/* Modal CREAR */}
             <LaborFormModal
-                isOpen={modalAbierto}
-                onClose={() => setModalAbierto(false)}
+                isOpen={modalCrearAbierto}
+                onClose={() => setModalCrearAbierto(false)}
                 onSuccess={() => {
-                    setModalAbierto(false);
+                    setModalCrearAbierto(false);
                     if (loteSeleccionadoId) cargarLabores(loteSeleccionadoId);
                 }}
                 lotes={lotes}
+                laborInicial={null}
             />
 
-            {/* Modal detalle (pulido) */}
+            {/* Modal EDITAR */}
+            <LaborFormModal
+                isOpen={!!laborAEditar}
+                onClose={() => setLaborAEditar(null)}
+                onSuccess={() => {
+                    setLaborAEditar(null);
+                    if (loteSeleccionadoId) cargarLabores(loteSeleccionadoId);
+                }}
+                lotes={lotes}
+                laborInicial={laborAEditar}
+            />
+
+            {/* Modal detalle */}
             <Dialog open={!!laborDetalle} onOpenChange={() => setLaborDetalle(null)}>
                 <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
@@ -648,7 +674,6 @@ const LaboresPage = () => {
                     </DialogHeader>
                     {laborDetalle && (
                         <div className="space-y-4 text-sm">
-                            {/* Lote + Fecha */}
                             <div className="flex items-center justify-between">
                                 <p className="text-gray-500">
                                     {new Date(laborDetalle.fecha).toLocaleDateString('es-AR')}
@@ -767,6 +792,33 @@ const LaboresPage = () => {
                                     <p className="italic text-gray-700">{laborDetalle.observaciones}</p>
                                 </div>
                             )}
+
+                            <div className="flex gap-2 pt-4 border-t">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const labor = laborDetalle;
+                                        setLaborDetalle(null);
+                                        setLaborAEditar(labor);
+                                    }}
+                                    className="flex-1"
+                                >
+                                    <Pencil className="mr-2 h-4 w-4" /> Editar
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                        const labor = laborDetalle;
+                                        setLaborDetalle(null);
+                                        setLaborAEliminar(labor);
+                                    }}
+                                    className="flex-1 text-red-600 hover:text-red-700 border-red-200"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                                </Button>
+                            </div>
                         </div>
                     )}
                 </DialogContent>
