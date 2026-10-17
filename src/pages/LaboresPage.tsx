@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { listarLotes } from '../services/lotes.service';
 import { listarLaboresPorLote, eliminarLabor } from '../services/labores.service';
 import LaborFormModal from '../components/forms/LaborFormModal';
+import { exportarLaboresPDF } from '../utils/exportarLaboresPDF';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -49,7 +50,7 @@ import {
     DialogTitle,
 } from '../components/ui/dialog';
 import {
-    Eye, Trash2, Plus, Settings2, ArrowUpDown, Pencil,
+    Eye, Trash2, Plus, Settings2, ArrowUpDown, Pencil, Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -173,7 +174,7 @@ const LaboresPage = () => {
     // Imagen/PDF abierto en modal
     const [archivoAbierto, setArchivoAbierto] = useState<string | null>(null);
 
-    // Filtros (solo desde/hasta — categoría sacada)
+    // Filtros
     const [filtroDesde, setFiltroDesde] = useState<string>('');
     const [filtroHasta, setFiltroHasta] = useState<string>('');
 
@@ -221,6 +222,35 @@ const LaboresPage = () => {
             toast.error('Error al cargar labores');
         } finally {
             setCargando(false);
+        }
+    };
+
+    // =============================================
+    // EXPORTAR PDF
+    // =============================================
+    const handleExportarPDF = () => {
+        const loteActual = lotes.find(l => l.id === loteSeleccionadoId);
+        if (!loteActual) {
+            toast.error('Seleccioná un lote primero');
+            return;
+        }
+        if (labores.length === 0) {
+            toast.error('No hay labores para exportar');
+            return;
+        }
+
+        try {
+            exportarLaboresPDF({
+                labores: laboresOrdenadas,
+                lote: loteActual,
+                usuario: null,
+                desde: filtroDesde,
+                hasta: filtroHasta,
+            });
+            toast.success('PDF generado');
+        } catch (err) {
+            console.error(err);
+            toast.error('Error al generar el PDF');
         }
     };
 
@@ -323,7 +353,6 @@ const LaboresPage = () => {
     // =============================================
     const ver = (col: string) => columnasVisibles.includes(col);
 
-    // Lista de adjuntos de la labor en detalle
     const adjuntosDetalle = laborDetalle
         ? [
             ...(laborDetalle.metadata?.receta_url ? [laborDetalle.metadata.receta_url] : []),
@@ -331,7 +360,6 @@ const LaboresPage = () => {
         ]
         : [];
 
-    // Nombre del lote en detalle
     const loteNombreDetalle = laborDetalle
         ? lotes.find(l => l.id === laborDetalle.lote_id)?.nombre || laborDetalle.lote_nombre || 'Sin lote'
         : '';
@@ -342,7 +370,7 @@ const LaboresPage = () => {
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h1 className="text-3xl font-bold text-green-700">Labores</h1>
-                    <p className="text-sm text-gray-500">Cuaderno de campo digital</p>
+                    <p className="text-sm text-gray-500">Trazabilidad digital</p>
                 </div>
                 <div className="flex gap-2">
                     <DropdownMenu>
@@ -379,6 +407,14 @@ const LaboresPage = () => {
                             </DropdownMenuCheckboxItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+
+                    <Button
+                        variant="outline"
+                        onClick={handleExportarPDF}
+                        disabled={labores.length === 0}
+                    >
+                        <Download className="mr-2 h-4 w-4" /> Exportar PDF
+                    </Button>
 
                     <Button
                         onClick={() => setModalCrearAbierto(true)}

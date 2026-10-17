@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Home, Map, Calendar, AlertCircle, Sprout, Settings, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
+import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: Home },
@@ -27,10 +27,10 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
       )}
     >
       {/* Header del sidebar */}
-      <div className="flex h-16 items-center gap-3 border-b px-4 flex-shrink-0">
-        <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-600/20 flex-shrink-0">
-          <Sprout className="h-6 w-6 text-white" />
-        </div>
+      <div className="flex h-20 items-center gap-3 border-b px-4 flex-shrink-0">
+        {/* Logo AlfalfaTrace */}
+        <AlfalfaTraceLogo size={44} showText={false} animated={true} />
+
         <div className="flex-1 min-w-0">
           <span className="block text-lg font-extrabold text-gray-900 dark:text-white truncate">
             AlfalfaTrace
@@ -39,6 +39,7 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
             Sistema de gestión
           </span>
         </div>
+
         <button
           onClick={onCerrar}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
@@ -73,7 +74,6 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
                   )}
                 />
                 <span className="text-base font-semibold">{item.label}</span>
-               
               </>
             )}
           </NavLink>

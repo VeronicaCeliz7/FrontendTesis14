@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sprout, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 import api from '../lib/axios';
+
 const LoginPage = () => {
   const [email, setEmail] = useState('campo@alfalfa.com');
   const [password, setPassword] = useState('');
@@ -22,7 +24,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-            const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', { email, password });
       const data = res.data;
 
       login(data.token, data.usuario);
@@ -39,16 +41,11 @@ const LoginPage = () => {
       <div className="w-full max-w-md mx-auto">
         <Card className="w-full shadow-xl border border-gray-200/50 dark:border-gray-800/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
           <CardHeader className="space-y-4 text-center pt-8 pb-6 px-6 sm:px-8">
+            {/* Logo AlfalfaTrace */}
             <div className="flex justify-center">
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-600/20">
-                <Sprout className="h-10 w-10 text-white" />
-              </div>
+              <AlfalfaTraceLogo size={80} showText={true} animated={true} />
             </div>
-            
-            <CardTitle className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
-              AlfalfaTrace
-            </CardTitle>
-            
+
             <CardDescription className="text-base sm:text-lg text-gray-600 dark:text-gray-300 font-medium">
               Sistema de gestión y monitoreo de lotes de alfalfa
             </CardDescription>
@@ -127,7 +124,7 @@ const LoginPage = () => {
                 )}
               </Button>
 
-                            <p className="text-center text-sm text-muted-foreground">
+              <p className="text-center text-sm text-muted-foreground">
                 ¿No tenés cuenta?{' '}
                 <Link to="/registro" className="text-primary hover:underline font-medium">
                   Registrate
