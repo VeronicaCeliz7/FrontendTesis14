@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sprout, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 import api from '../lib/axios';
 
 const RegisterPage = () => {
@@ -61,18 +62,17 @@ const RegisterPage = () => {
       <div className="w-full max-w-md mx-auto">
         <Card className="w-full shadow-xl border border-gray-200/50 dark:border-gray-800/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
           <CardHeader className="space-y-4 text-center pt-8 pb-6 px-6 sm:px-8">
+            {/* Logo AlfaTrace */}
             <div className="flex justify-center">
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-green-600 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-600/20">
-                <Sprout className="h-10 w-10 text-white" />
-              </div>
+              <AlfalfaTraceLogo size={80} showText={true} animated={true} />
             </div>
 
-            <CardTitle className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+            <CardTitle className="text-3xl sm:text-4xl font-bold tracking-tight text-gray-900 dark:text-white pt-2">
               Crear cuenta
             </CardTitle>
 
             <CardDescription className="text-base sm:text-lg text-gray-600 dark:text-gray-300 font-medium">
-              Registrate en AlfalfaTrace
+              Registrate en AlfaTrace
             </CardDescription>
           </CardHeader>
 
@@ -90,7 +90,7 @@ const RegisterPage = () => {
                     type="text"
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
-                    className="pl-10 h-12 bg-white dark:bg-gray-800"
+                    className="pl-10 h-12 bg-white dark:bg-gray-800 focus:border-[#0f7a50] focus:ring-[#0f7a50]/20"
                     placeholder="Juan Pérez"
                     required
                   />
@@ -109,8 +109,8 @@ const RegisterPage = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 bg-white dark:bg-gray-800"
-                    placeholder="usuario@alfalfatrace.com"
+                    className="pl-10 h-12 bg-white dark:bg-gray-800 focus:border-[#0f7a50] focus:ring-[#0f7a50]/20"
+                    placeholder="usuario@alfatrace.com"
                     required
                   />
                 </div>
@@ -128,7 +128,7 @@ const RegisterPage = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 bg-white dark:bg-gray-800"
+                    className="pl-10 pr-10 h-12 bg-white dark:bg-gray-800 focus:border-[#0f7a50] focus:ring-[#0f7a50]/20"
                     placeholder="Mínimo 6 caracteres"
                     required
                   />
@@ -154,7 +154,7 @@ const RegisterPage = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 h-12 bg-white dark:bg-gray-800"
+                    className="pl-10 h-12 bg-white dark:bg-gray-800 focus:border-[#0f7a50] focus:ring-[#0f7a50]/20"
                     placeholder="Repetí la contraseña"
                     required
                   />
@@ -169,10 +169,11 @@ const RegisterPage = () => {
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4 px-6 sm:px-8 pb-8 pt-4">
+              {/* Botón con degradado AlfaTrace */}
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 text-base font-semibold"
+                className="w-full h-12 text-base font-semibold bg-gradient-to-r from-[#0f7a50] to-[#064e3b] hover:from-[#0a6140] hover:to-[#022c22] text-white shadow-lg shadow-[#064e3b]/25 hover:shadow-[#064e3b]/40 transition-all duration-200"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -186,7 +187,7 @@ const RegisterPage = () => {
 
               <p className="text-center text-sm text-muted-foreground">
                 ¿Ya tenés cuenta?{' '}
-                <Link to="/login" className="text-primary hover:underline font-medium">
+                <Link to="/login" className="text-[#0f7a50] hover:text-[#064e3b] dark:text-[#34d399] hover:underline font-medium">
                   Iniciá sesión
                 </Link>
               </p>

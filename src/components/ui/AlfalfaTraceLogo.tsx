@@ -176,7 +176,7 @@ export default function AlfalfaTraceLogo({
 
       {showText && (
         <span className="text">
-          Alfalfa<b>Trace</b>
+          Alfa<b>Trace</b>
         </span>
       )}
     </span>

@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/components/ui/card';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 import api from '../lib/axios';
@@ -41,13 +41,13 @@ const LoginPage = () => {
       <div className="w-full max-w-md mx-auto">
         <Card className="w-full shadow-xl border border-gray-200/50 dark:border-gray-800/50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm">
           <CardHeader className="space-y-4 text-center pt-8 pb-6 px-6 sm:px-8">
-            {/* Logo AlfalfaTrace */}
+            {/* Logo AlfaTrace */}
             <div className="flex justify-center">
               <AlfalfaTraceLogo size={80} showText={true} animated={true} />
             </div>
 
             <CardDescription className="text-base sm:text-lg text-gray-600 dark:text-gray-300 font-medium">
-              Sistema de gestión y monitoreo de lotes de alfalfa
+              Trazabilidad digital para tu alfalfa
             </CardDescription>
           </CardHeader>
 
@@ -64,8 +64,8 @@ const LoginPage = () => {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-12 sm:h-14 text-base sm:text-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:border-green-500 focus:ring-green-500/20 text-gray-900 dark:text-white placeholder:text-gray-400"
-                    placeholder="usuario@alfalfatrace.com"
+                    className="pl-10 h-12 sm:h-14 text-base sm:text-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:border-[#0f7a50] focus:ring-[#0f7a50]/20 text-gray-900 dark:text-white placeholder:text-gray-400"
+                    placeholder="usuario@alfatrace.com"
                     required
                   />
                 </div>
@@ -76,7 +76,8 @@ const LoginPage = () => {
                   <Label htmlFor="password" className="text-base sm:text-lg font-semibold text-gray-700 dark:text-gray-200">
                     Contraseña
                   </Label>
-                  <a href="#" className="text-sm sm:text-base text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 font-medium transition-colors">
+                  {/* Color verde marca para "¿Olvidaste tu contraseña?" */}
+                  <a href="#" className="text-sm sm:text-base text-[#0f7a50] hover:text-[#064e3b] dark:text-[#34d399] dark:hover:text-[#6ee7b7] font-medium transition-colors">
                     ¿Olvidaste tu contraseña?
                   </a>
                 </div>
@@ -87,7 +88,7 @@ const LoginPage = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-12 sm:h-14 text-base sm:text-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:border-green-500 focus:ring-green-500/20 text-gray-900 dark:text-white placeholder:text-gray-400"
+                    className="pl-10 pr-10 h-12 sm:h-14 text-base sm:text-lg bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 focus:border-[#0f7a50] focus:ring-[#0f7a50]/20 text-gray-900 dark:text-white placeholder:text-gray-400"
                     placeholder="••••••••"
                     required
                   />
@@ -109,10 +110,11 @@ const LoginPage = () => {
             </CardContent>
 
             <CardFooter className="flex flex-col space-y-4 px-6 sm:px-8 pb-8 pt-4">
+              {/* Botón con el degradado esmeralda del logo */}
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-lg shadow-green-600/25 hover:shadow-green-600/40 transition-all duration-200"
+                className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold bg-gradient-to-r from-[#0f7a50] to-[#064e3b] hover:from-[#0a6140] hover:to-[#022c22] text-white shadow-lg shadow-[#064e3b]/25 hover:shadow-[#064e3b]/40 transition-all duration-200"
               >
                 {loading ? (
                   <span className="flex items-center gap-3">
@@ -126,7 +128,7 @@ const LoginPage = () => {
 
               <p className="text-center text-sm text-muted-foreground">
                 ¿No tenés cuenta?{' '}
-                <Link to="/registro" className="text-primary hover:underline font-medium">
+                <Link to="/registro" className="text-[#0f7a50] hover:text-[#064e3b] dark:text-[#34d399] hover:underline font-medium">
                   Registrate
                 </Link>
               </p>

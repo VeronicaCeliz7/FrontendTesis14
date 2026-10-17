@@ -99,7 +99,7 @@ export async function exportarLaboresPDF({
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(...VERDE_OSCURO);
-    doc.text('AlfalfaTrace', marginX, y);
+    doc.text('AlfaTrace', marginX, y);
 
     y += 7;
     doc.setFont('helvetica', 'normal');
@@ -311,7 +311,7 @@ export async function exportarLaboresPDF({
         doc.setFontSize(8);
         doc.setTextColor(...GRIS_TEXTO);
         doc.text(
-            `Generado por AlfalfaTrace · ${new Date().toLocaleString('es-AR')}`,
+            `Generado por AlfaTrace · ${new Date().toLocaleString('es-AR')}`,
             marginX,
             pageHeight - 8
         );
@@ -326,6 +326,6 @@ export async function exportarLaboresPDF({
     // =============================================
     // GUARDAR
     // =============================================
-    const nombreArchivo = `AlfalfaTrace_${lote.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const nombreArchivo = `AlfaTrace_${lote.nombre.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(nombreArchivo);
 }

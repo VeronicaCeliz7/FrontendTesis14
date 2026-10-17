@@ -1,15 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Map, Calendar, AlertCircle, Sprout, Settings, X } from 'lucide-react';
+import { Home, Map, Sprout, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 
 const navItems = [
   { path: '/', label: 'Dashboard', icon: Home },
-  { path: '/lotes', label: 'Mis Lotes', icon: Map },
   { path: '/labores', label: 'Labores', icon: Sprout },
-  { path: '/cortes', label: 'Cortes', icon: Calendar },
-  { path: '/alertas', label: 'Alertas', icon: AlertCircle }, 
-  { path: '/configuracion', label: 'Configuración', icon: Settings },
+  { path: '/lotes', label: 'Mis Lotes', icon: Map },
 ];
 
 interface SidebarProps {
@@ -28,15 +25,14 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
     >
       {/* Header del sidebar */}
       <div className="flex h-20 items-center gap-3 border-b px-4 flex-shrink-0">
-        {/* Logo AlfalfaTrace */}
         <AlfalfaTraceLogo size={44} showText={false} animated={true} />
 
         <div className="flex-1 min-w-0">
           <span className="block text-lg font-extrabold text-gray-900 dark:text-white truncate">
-            AlfalfaTrace
+            AlfaTrace
           </span>
           <span className="block text-xs font-medium text-gray-600 dark:text-gray-300 truncate">
-            Sistema de gestión
+            Trazabilidad digital
           </span>
         </div>
 
@@ -60,7 +56,7 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
               cn(
                 "flex items-center gap-4 rounded-xl px-5 py-4 text-base font-semibold transition-all duration-200",
                 isActive
-                  ? "bg-secondary text-foreground shadow-sm"
+                  ? "bg-[#0f7a50]/10 text-[#064e3b] dark:bg-[#0f7a50]/20 dark:text-[#34d399]" // <-- COLOR DE MARCA
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )
             }
@@ -70,7 +66,7 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
                 <item.icon
                   className={cn(
                     "h-6 w-6 transition-colors stroke-[2.5]",
-                    isActive ? "text-[hsl(var(--success))]" : "text-muted-foreground"
+                    isActive ? "text-[#0f7a50] dark:text-[#34d399]" : "text-muted-foreground" // <-- COLOR DE MARCA
                   )}
                 />
                 <span className="text-base font-semibold">{item.label}</span>
