@@ -12,7 +12,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '../ui/dialog';
-import { FileText, X, Loader2, Eye } from 'lucide-react';
+import { FileText, X, Loader2, Eye, Camera, Settings2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // =============================================
@@ -35,15 +35,11 @@ interface LaborInicial {
         tipo_maquina?: string;
         clasificacion?: string;
         marca_modelo?: string;
-        hectareas?: number;
-        horas?: number;
         unidad?: string;
-        costo?: number;
         cantidad_total?: number;
         calidad?: {
             excelente?: number;
-            buena?: number;
-            media?: number;
+            media?: number; // Ya no está "buena"
         };
         receta_url?: string;
         fotos?: string[];
@@ -63,19 +59,20 @@ const CATEGORIAS_TIPOS: Record<string, string[]> = {
     'Fumigación': ['Herbicida', 'Fungicida', 'Insecticida', 'Fertilizante foliar', 'Fertilizante granulado', 'Bioestimulante', 'Otro'],
     'Corte': ['Corte con segadora', 'Corte con hélice', 'Corte con cortadora acondicionadora'],
     'Rastrillado': ['Rastrillado con rastrillo de 8 estrellas', 'Rastrillado con rastrillo de 16 estrellas', 'Rastrillado con otro'],
-    'Henificación': ['Henificado', 'Enfardado', 'Ensilado', 'Recolección de rollos'],
+    'Enfardado': ['Rollo', 'Fardo', 'Megafardo'],
     'Labranza': ['Arado', 'Doble acción', 'Rastra', 'Disco', 'Cincel', 'Rollo', 'Subsolado', 'Nivelación'],
     'Arreglos y mantenimiento': ['Alambrado', 'Maquinaria', 'Bebederos', 'Caminos', 'Molino / bomba', 'Galpón / tinglado', 'Otro'],
-    'Otros': ['Análisis de suelo', 'Asesoramiento', 'Venta', 'Compra', 'Pesaje', 'Observación', 'Clima', 'Otro'],
+    'Otros': ['Recolección de rollos', 'Análisis de suelo', 'Asesoramiento', 'Venta', 'Compra', 'Pesaje', 'Observación', 'Clima', 'Otro'],
 };
 
 const MAQUINAS_POR_TIPO: Record<string, string[]> = {
-    'Enfardado': ['Rotorenfardadora', 'Enfardadora (fardos chicos)', 'Megaenfardadora (fardos grandes)'],
+    'Rollo': ['Rotorenfardadora'],
+    'Fardo': ['Enfardadora (fardos chicos)'],
+    'Megafardo': ['Megaenfardadora (fardos grandes)'],
 };
 
-const CLASIFICACIONES_ROTORENFARDADORA = ['Sin cuter', 'Con cuter'];
+const CLASIFICACIONES_CUTTER = ['Sin cutter', 'Con cutter'];
 const UNIDADES_DOSIS = ['L/ha', 'kg/ha', 'g/ha', 'cc/ha', 'L', 'kg'];
-
 const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500";
 
 // =============================================
@@ -123,17 +120,6 @@ function capitalizarPrimera(valor: string) {
 }
 
 // =============================================
-// Helper: extraer adjuntos del laborInicial
-// =============================================
-function extraerAdjuntos(labor?: LaborInicial | null): string[] {
-    if (!labor?.metadata) return [];
-    const urls: string[] = [];
-    if (labor.metadata.receta_url) urls.push(labor.metadata.receta_url);
-    if (labor.metadata.fotos) urls.push(...labor.metadata.fotos);
-    return urls;
-}
-
-// =============================================
 // Helper: convertir número a string para inputs
 // =============================================
 function numToString(n: number | undefined | null): string {
@@ -143,12 +129,15 @@ function numToString(n: number | undefined | null): string {
 
 const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps) => {
     const { token } = useAuth();
+    
+    // Refs para los inputs de archivos
     const archivoInputRef = useRef<HTMLInputElement>(null);
+    const recetaInputRef = useRef<HTMLInputElement>(null);
 
     const esEdicion = !!laborInicial;
 
     // =============================================
-    // ESTADO (inicializado con laborInicial si existe)
+    // ESTADO
     // =============================================
     const [categoria, setCategoria] = useState(laborInicial?.categoria || '');
     const [tipo, setTipo] = useState(laborInicial?.tipo || '');
@@ -162,68 +151,84 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
     const [unidad, setUnidad] = useState(laborInicial?.metadata?.unidad || 'L/ha');
     const [plaga, setPlaga] = useState(laborInicial?.plaga || '');
     const [semilla, setSemilla] = useState(laborInicial?.semilla || '');
+    
+    // Ejecución Básica
     const [operador, setOperador] = useState(laborInicial?.metadata?.operador || '');
     const [maquinaria, setMaquinaria] = useState(laborInicial?.metadata?.maquinaria || '');
+    
+    // Enfardado
     const [tipoMaquina, setTipoMaquina] = useState(laborInicial?.metadata?.tipo_maquina || '');
     const [clasificacionMaquina, setClasificacionMaquina] = useState(laborInicial?.metadata?.clasificacion || '');
     const [marcaModelo, setMarcaModelo] = useState(laborInicial?.metadata?.marca_modelo || '');
-    const [hectareas, setHectareas] = useState(numToString(laborInicial?.metadata?.hectareas));
-    const [horas, setHoras] = useState(numToString(laborInicial?.metadata?.horas));
-    const [costo, setCosto] = useState(numToString(laborInicial?.metadata?.costo));
     const [cantidadTotal, setCantidadTotal] = useState(
         numToString(laborInicial?.metadata?.cantidad_total)
     );
     const [calidadExcelente, setCalidadExcelente] = useState(
         numToString(laborInicial?.metadata?.calidad?.excelente)
     );
-    const [calidadBuena, setCalidadBuena] = useState(
-        numToString(laborInicial?.metadata?.calidad?.buena)
-    );
     const [calidadMedia, setCalidadMedia] = useState(
         numToString(laborInicial?.metadata?.calidad?.media)
     );
+
+    // Opciones Avanzadas
+    const [mostrarAvanzado, setMostrarAvanzado] = useState(false);
     const [observaciones, setObservaciones] = useState(laborInicial?.observaciones || '');
+    const [adjuntosUrls, setAdjuntosUrls] = useState<string[]>(
+        laborInicial?.metadata?.fotos || []
+    );
+    
+    // Receta (Fumigación)
+    const [recetaUrl, setRecetaUrl] = useState<string | null>(
+        laborInicial?.metadata?.receta_url || null
+    );
 
-    // Adjuntos: si es edición, precargar los del laborInicial
-    const [adjuntosUrls, setAdjuntosUrls] = useState<string[]>(extraerAdjuntos(laborInicial));
+    // UI
     const [subiendo, setSubiendo] = useState(false);
-
-    // Modal de vista previa
     const [archivoAbierto, setArchivoAbierto] = useState<string | null>(null);
-
     const [cargando, setCargando] = useState(false);
 
     // =============================================
-    // SUBIR ARCHIVO (directo a Cloudinary)
+    // SUBIR ARCHIVO (Genérico - Opciones Avanzadas)
     // =============================================
     const handleArchivoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         if (files.length === 0) return;
-
         setSubiendo(true);
-        const toastId = toast.loading(`Subiendo ${files.length} archivo(s)...`);
+        const toastId = toast.loading(`Subiendo archivo...`);
 
         try {
-            const nuevasUrls: string[] = [];
             for (const file of files) {
-                try {
-                    const url = await subirACloudinary(file);
-                    nuevasUrls.push(url);
-                } catch (err: any) {
-                    console.error('Error subiendo:', err);
-                    toast.error(`Error con ${file.name}`, { id: toastId });
-                }
+                const url = await subirACloudinary(file);
+                setAdjuntosUrls(prev => [...prev, url]);
             }
-
-            if (nuevasUrls.length > 0) {
-                setAdjuntosUrls(prev => [...prev, ...nuevasUrls]);
-                toast.success(`${nuevasUrls.length} archivo(s) subido(s)`, { id: toastId });
-            } else {
-                toast.error('No se pudo subir ningún archivo', { id: toastId });
-            }
+            toast.success(`Subido correctamente`, { id: toastId });
+        } catch (err: any) {
+            toast.error(`Error al subir`, { id: toastId });
         } finally {
             setSubiendo(false);
             if (archivoInputRef.current) archivoInputRef.current.value = '';
+        }
+    };
+
+    // =============================================
+    // SUBIR RECETA (Fumigación)
+    // =============================================
+    const handleRecetaChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        
+        setSubiendo(true);
+        const toastId = toast.loading(`Subiendo receta...`);
+
+        try {
+            const url = await subirACloudinary(file);
+            setRecetaUrl(url);
+            toast.success(`Receta subida`, { id: toastId });
+        } catch (err: any) {
+            toast.error(`Error al subir receta`, { id: toastId });
+        } finally {
+            setSubiendo(false);
+            if (recetaInputRef.current) recetaInputRef.current.value = '';
         }
     };
 
@@ -232,12 +237,14 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
     };
 
     // =============================================
-    // VALIDAR CALIDAD vs CANTIDAD
+    // VALIDAR CALIDAD
     // =============================================
+    const esEnfardado = ['Rollo', 'Fardo', 'Megafardo'].includes(tipo);
+    
     const validarCalidad = (): boolean => {
-        if (tipo !== 'Enfardado') return true;
+        if (!esEnfardado) return true;
         const total = parseInt(cantidadTotal) || 0;
-        const suma = (parseInt(calidadExcelente) || 0) + (parseInt(calidadBuena) || 0) + (parseInt(calidadMedia) || 0);
+        const suma = (parseInt(calidadExcelente) || 0) + (parseInt(calidadMedia) || 0); // Solo Excelente y Media
         if (suma > 0 && suma !== total) {
             toast.error(`La suma de calidades (${suma}) no coincide con el total (${total})`);
             return false;
@@ -246,7 +253,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
     };
 
     // =============================================
-    // SUBMIT (crear o editar según modo)
+    // SUBMIT
     // =============================================
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -255,11 +262,6 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
         if (!tipo) return toast.error('Seleccioná un tipo de labor');
         if (!fecha) return toast.error('La fecha es obligatoria');
 
-        // Validaciones de números negativos
-        if (hectareas && parseFloat(hectareas) < 0) return toast.error('Las hectáreas no pueden ser negativas');
-        if (horas && parseFloat(horas) < 0) return toast.error('Las horas no pueden ser negativas');
-        if (costo && parseFloat(costo) < 0) return toast.error('El costo no puede ser negativo');
-        if (dosis && parseFloat(dosis) < 0) return toast.error('La dosis no puede ser negativa');
         if (cantidadTotal && parseInt(cantidadTotal) < 0) return toast.error('La cantidad no puede ser negativa');
 
         if (!validarCalidad()) return;
@@ -271,18 +273,14 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
             if (clasificacionMaquina) metadataExtra.clasificacion = clasificacionMaquina;
             if (marcaModelo) metadataExtra.marca_modelo = marcaModelo;
 
-            if (tipo === 'Enfardado' && cantidadTotal) {
+            if (esEnfardado && cantidadTotal) {
                 metadataExtra.cantidad_total = parseInt(cantidadTotal);
+                
                 const calidad: any = {};
                 if (calidadExcelente) calidad.excelente = parseInt(calidadExcelente);
-                if (calidadBuena) calidad.buena = parseInt(calidadBuena);
                 if (calidadMedia) calidad.media = parseInt(calidadMedia);
                 if (Object.keys(calidad).length > 0) metadataExtra.calidad = calidad;
             }
-
-            // Primer adjunto → receta_url, resto → fotos
-            const receta_url = adjuntosUrls[0] || null;
-            const fotos = adjuntosUrls.slice(1);
 
             const data: CrearLaborData = {
                 lote_id: loteId,
@@ -296,12 +294,9 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                 semilla: semilla || undefined,
                 operador: operador || undefined,
                 maquinaria: maquinaria || tipoMaquina || undefined,
-                hectareas: hectareas ? parseFloat(hectareas) : undefined,
-                horas: horas ? parseFloat(horas) : undefined,
-                costo: costo ? parseFloat(costo) : undefined,
                 observaciones: observaciones || undefined,
-                receta_url,
-                fotos: fotos.length > 0 ? fotos : undefined,
+                receta_url: recetaUrl,
+                fotos: adjuntosUrls.length > 0 ? adjuntosUrls : undefined,
                 metadata_extra: Object.keys(metadataExtra).length > 0 ? metadataExtra : undefined,
             };
 
@@ -324,13 +319,13 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
 
     const tiposDisponibles = categoria ? CATEGORIAS_TIPOS[categoria] || [] : [];
     const maquinasDisponibles = tipo ? MAQUINAS_POR_TIPO[tipo] || [] : [];
-    const mostrarEnfardado = tipo === 'Enfardado';
     const mostrarInsumo = categoria === 'Fumigación';
     const mostrarSemilla = categoria === 'Siembra';
 
     return (
         <>
             <form onSubmit={handleSubmit} className="space-y-6">
+                {/* BÁSICOS */}
                 <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
@@ -383,6 +378,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                     </div>
                 </div>
 
+                {/* MÁQUINA (Enfardado) */}
                 {maquinasDisponibles.length > 0 && (
                     <div className="space-y-4 p-4 bg-yellow-50 rounded-lg border-l-4 border-yellow-500">
                         <p className="font-semibold text-sm text-yellow-800">Máquina</p>
@@ -400,7 +396,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                             </select>
                         </div>
 
-                        {tipoMaquina === 'Rotorenfardadora' && (
+                        {tipoMaquina && (
                             <div>
                                 <Label>Clasificación</Label>
                                 <select
@@ -409,30 +405,27 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                                     className={`${selectClass} mt-1`}
                                 >
                                     <option value="">Seleccionar</option>
-                                    {CLASIFICACIONES_ROTORENFARDADORA.map((c) => (
+                                    {CLASIFICACIONES_CUTTER.map((c) => (
                                         <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>
                             </div>
                         )}
-
+                        
                         <div>
                             <Label>Marca / modelo (opcional)</Label>
-                            <Input
-                                value={marcaModelo}
-                                onChange={(e) => setMarcaModelo(e.target.value)}
-                                placeholder="Ej: New Holland Roll-Belt 560"
-                                className="mt-1"
-                            />
+                            <Input value={marcaModelo} onChange={(e) => setMarcaModelo(e.target.value)} placeholder="Ej: New Holland" className="mt-1" />
                         </div>
                     </div>
                 )}
 
-                {mostrarEnfardado && (
+                {/* PRODUCCIÓN (Enfardado) */}
+                {esEnfardado && (
                     <div className="space-y-4 p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
                         <p className="font-semibold text-sm text-amber-800">Producción</p>
+                        
                         <div>
-                            <Label>Cantidad total</Label>
+                            <Label>Cantidad total de rollos/fardos</Label>
                             <Input
                                 type="number"
                                 min="0"
@@ -442,17 +435,14 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                                 className="mt-1"
                             />
                         </div>
+
                         {cantidadTotal && (
                             <div className="space-y-2">
                                 <Label className="text-xs text-gray-600">Detalle por calidad (opcional)</Label>
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-2 gap-2">
                                     <div>
                                         <Label className="text-xs">Excelente</Label>
                                         <Input type="number" min="0" value={calidadExcelente} onChange={(e) => setCalidadExcelente(e.target.value)} placeholder="0" className="mt-1" />
-                                    </div>
-                                    <div>
-                                        <Label className="text-xs">Buena</Label>
-                                        <Input type="number" min="0" value={calidadBuena} onChange={(e) => setCalidadBuena(e.target.value)} placeholder="0" className="mt-1" />
                                     </div>
                                     <div>
                                         <Label className="text-xs">Media</Label>
@@ -461,16 +451,17 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                                 </div>
                                 <p className="text-xs text-gray-500">
                                     Total: {parseInt(cantidadTotal) || 0} |
-                                    Suma: {(parseInt(calidadExcelente) || 0) + (parseInt(calidadBuena) || 0) + (parseInt(calidadMedia) || 0)}
+                                    Suma: {(parseInt(calidadExcelente) || 0) + (parseInt(calidadMedia) || 0)}
                                 </p>
                             </div>
                         )}
                     </div>
                 )}
 
+                {/* INSUMO (Fumigación) + RECETA */}
                 {mostrarInsumo && (
                     <div className="space-y-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
-                        <p className="font-semibold text-sm text-red-800">Insumo</p>
+                        <p className="font-semibold text-sm text-red-800">Insumo y Receta</p>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2">
                                 <Label>Producto</Label>
@@ -497,9 +488,37 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                                 <Input value={plaga} onChange={(e) => setPlaga(e.target.value)} placeholder="Ej: Pulgón, Arañuela" className="mt-1" />
                             </div>
                         </div>
+
+                        {/* BOTÓN ESPECÍFICO PARA LA RECETA */}
+                        <div className="pt-2 border-t border-red-200">
+                            <Label className="mb-2 block">Receta de Fumigación (Obligatoria)</Label>
+                            <input
+                                ref={recetaInputRef}
+                                type="file"
+                                accept="image/*,application/pdf"
+                                className="hidden"
+                                onChange={handleRecetaChange}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full border-red-300 text-red-700 hover:bg-red-100"
+                                onClick={() => recetaInputRef.current?.click()}
+                                disabled={subiendo}
+                            >
+                                <Camera className="mr-2 h-4 w-4" /> {recetaUrl ? 'Cambiar Receta' : 'Adjuntar Receta'}
+                            </Button>
+                            {recetaUrl && (
+                                <div className="mt-2 text-sm text-green-600 flex items-center justify-between bg-white p-2 rounded border">
+                                    <span>Receta adjuntada</span>
+                                    <button type="button" onClick={() => setArchivoAbierto(recetaUrl)} className="text-blue-600 underline">Ver</button>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
 
+                {/* SEMILLA (Siembra) */}
                 {mostrarSemilla && (
                     <div className="space-y-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
                         <p className="font-semibold text-sm text-green-800">Semilla</p>
@@ -510,6 +529,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                     </div>
                 )}
 
+                {/* EJECUCIÓN */}
                 <div className="space-y-4">
                     <p className="font-semibold text-sm text-gray-700">Ejecución</p>
                     <div className="grid grid-cols-2 gap-4">
@@ -524,7 +544,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                             />
                         </div>
                         <div>
-                            <Label>Maquinaria</Label>
+                            <Label>Maquinaria (opcional)</Label>
                             <Input
                                 value={maquinaria}
                                 onChange={(e) => setMaquinaria(e.target.value)}
@@ -533,118 +553,72 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                                 className="mt-1"
                             />
                         </div>
-                        <div>
-                            <Label>Hectáreas</Label>
-                            <Input
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                value={hectareas}
-                                onChange={(e) => setHectareas(e.target.value)}
-                                placeholder="Ej: 12.5"
-                                className="mt-1"
-                            />
-                        </div>
-                        <div>
-                            <Label>Horas</Label>
-                            <Input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                value={horas}
-                                onChange={(e) => setHoras(e.target.value)}
-                                placeholder="Ej: 3.5"
-                                className="mt-1"
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <Label>Costo (opcional)</Label>
-                            <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                value={costo}
-                                onChange={(e) => setCosto(e.target.value)}
-                                placeholder="Ej: 45000"
-                                className="mt-1"
-                            />
-                        </div>
                     </div>
                 </div>
 
-                {/* ADJUNTAR ARCHIVO */}
-                <div className="space-y-2">
-                    <Label>Adjuntar archivo (opcional)</Label>
-
-                    <input
-                        ref={archivoInputRef}
-                        type="file"
-                        accept="image/*,application/pdf"
-                        multiple
-                        className="hidden"
-                        onChange={handleArchivoChange}
-                    />
-
-                    <Button
+                {/* OPCIONES AVANZADAS (Colapsable) */}
+                <div className="border rounded-lg p-4 bg-gray-50">
+                    <button
                         type="button"
-                        variant="outline"
-                        className="w-full"
-                        onClick={() => archivoInputRef.current?.click()}
-                        disabled={subiendo}
+                        onClick={() => setMostrarAvanzado(!mostrarAvanzado)}
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-700 w-full text-left"
                     >
-                        {subiendo ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Subiendo...</>
-                        ) : (
-                            <><FileText className="mr-2 h-4 w-4" /> Adjuntar archivo</>
-                        )}
-                    </Button>
+                        <Settings2 className="h-4 w-4" />
+                        Opciones Avanzadas (Observaciones y Otros archivos)
+                    </button>
 
-                    {adjuntosUrls.length > 0 && (
-                        <div className="space-y-1">
-                            {adjuntosUrls.map((url, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm bg-gray-50 p-2 rounded">
-                                    <FileText className="h-4 w-4 text-gray-500" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setArchivoAbierto(url)}
-                                        className="flex-1 truncate text-left text-blue-600 underline"
-                                    >
-                                        Archivo {i + 1}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setArchivoAbierto(url)}
-                                        className="text-gray-500 hover:text-gray-700"
-                                        title="Ver archivo"
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => eliminarAdjunto(i)}
-                                        className="text-red-500 hover:text-red-700"
-                                        title="Eliminar"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </button>
-                                </div>
-                            ))}
+                    {mostrarAvanzado && (
+                        <div className="mt-4 space-y-4 pt-4 border-t border-gray-200">
+                            <div>
+                                <Label>Observaciones</Label>
+                                <Textarea
+                                    value={observaciones}
+                                    onChange={(e) => setObservaciones(e.target.value)}
+                                    onBlur={(e) => setObservaciones(capitalizarPrimera(e.target.value))}
+                                    placeholder="Ej: Viento leve del norte..."
+                                    rows={2}
+                                    className="mt-1"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label>Otros archivos (opcional)</Label>
+                                <input
+                                    ref={archivoInputRef}
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    multiple
+                                    className="hidden"
+                                    onChange={handleArchivoChange}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={() => archivoInputRef.current?.click()}
+                                    disabled={subiendo}
+                                >
+                                    <FileText className="mr-2 h-4 w-4" /> Adjuntar archivo genérico
+                                </Button>
+
+                                {adjuntosUrls.length > 0 && (
+                                    <div className="space-y-1">
+                                        {adjuntosUrls.map((url, i) => (
+                                            <div key={i} className="flex items-center gap-2 text-sm bg-white p-2 rounded border">
+                                                <FileText className="h-4 w-4 text-gray-500" />
+                                                <button type="button" onClick={() => setArchivoAbierto(url)} className="flex-1 truncate text-left text-blue-600 underline">Archivo {i + 1}</button>
+                                                <button type="button" onClick={() => setArchivoAbierto(url)} className="text-gray-500 hover:text-gray-700"><Eye className="h-4 w-4" /></button>
+                                                <button type="button" onClick={() => eliminarAdjunto(i)} className="text-red-500 hover:text-red-700"><X className="h-4 w-4" /></button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
 
-                <div>
-                    <Label>Observaciones</Label>
-                    <Textarea
-                        value={observaciones}
-                        onChange={(e) => setObservaciones(e.target.value)}
-                        onBlur={(e) => setObservaciones(capitalizarPrimera(e.target.value))}
-                        placeholder="Observaciones adicionales..."
-                        rows={3}
-                        className="mt-1"
-                    />
-                </div>
-
+                {/* BOTONES */}
                 <div className="flex gap-3 pt-4 border-t">
                     <Button type="button" variant="outline" onClick={onCancel} disabled={cargando} className="flex-1">
                         Cancelar
@@ -665,22 +639,14 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
             <Dialog open={!!archivoAbierto} onOpenChange={() => setArchivoAbierto(null)}>
                 <DialogContent className="max-w-4xl max-h-[90vh]">
                     <DialogHeader>
-                        <DialogTitle>Vista previa del archivo</DialogTitle>
+                        <DialogTitle>Vista previa</DialogTitle>
                     </DialogHeader>
                     {archivoAbierto && (
                         <div className="flex items-center justify-center">
                             {esPdf(archivoAbierto) ? (
-                                <iframe
-                                    src={archivoAbierto}
-                                    className="w-full h-[70vh] rounded"
-                                    title="PDF"
-                                />
+                                <iframe src={archivoAbierto} className="w-full h-[70vh] rounded" title="PDF" />
                             ) : (
-                                <img
-                                    src={archivoAbierto}
-                                    alt="Adjunto"
-                                    className="max-w-full max-h-[70vh] object-contain rounded"
-                                />
+                                <img src={archivoAbierto} alt="Adjunto" className="max-w-full max-h-[70vh] object-contain rounded" />
                             )}
                         </div>
                     )}
