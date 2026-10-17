@@ -59,8 +59,10 @@ interface ExportarPDFParams {
 }
 
 // =============================================
-// COLORES
+// CONFIG Y COLORES
 // =============================================
+const LOGO_URL = 'https://res.cloudinary.com/dgajevrs8/image/upload/v5wqkmef3qryv8e8dpzi.png';
+
 const VERDE_OSCURO = [6, 78, 59] as [number, number, number];
 const VERDE_MEDIO = [16, 122, 80] as [number, number, number];
 const GRIS_CLARO = [245, 245, 245] as [number, number, number];
@@ -92,20 +94,29 @@ export async function exportarLaboresPDF({
     const marginX = 15;
 
     // =============================================
-    // ENCABEZADO
+    // ENCABEZADO CON LOGO
     // =============================================
     let y = 20;
+
+    // Insertamos el logo
+    try {
+        doc.addImage(LOGO_URL, 'PNG', marginX, y - 7, 16, 16);
+    } catch (error) {
+        console.error('No se pudo cargar el logo en el PDF', error);
+    }
+
+    const textX = marginX + 20; 
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(...VERDE_OSCURO);
-    doc.text('AlfaTrace', marginX, y);
+    doc.text('AlfaTrace', textX, y);
 
     y += 7;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...GRIS_TEXTO);
-    doc.text('Trazabilidad digital', marginX, y);
+    doc.text('Trazabilidad digital', textX, y);
 
     y += 5;
     doc.setDrawColor(...VERDE_MEDIO);
@@ -301,6 +312,34 @@ export async function exportarLaboresPDF({
     doc.setTextColor(...GRIS_TEXTO);
     doc.text('Firma', marginX, y);
     doc.text('Aclaración', marginX + 90, y);
+
+    // =============================================
+    // MARCA DE AGUA (Sutil, diagonal y centrada)
+    // =============================================
+    try {
+        // 1. Bajamos la opacidad al 5% (casi invisible, no molesta al leer)
+        doc.setGState(new (doc as any).GState({ opacity: 0.05 }));
+        
+        const totalPaginas = doc.getNumberOfPages();
+        for (let i = 1; i <= totalPaginas; i++) {
+            doc.setPage(i);
+            
+            // 2. Achicamos un poco y rotamos 30 grados
+            doc.addImage(
+                LOGO_URL, 
+                'PNG', 
+                pageWidth / 2 - 40,  // X (lo centramos calculando el ancho)
+                pageHeight / 2 - 40, // Y (lo centramos calculando el alto)
+                80,                  // Ancho (más chico)
+                80,                  // Alto
+                undefined, 
+                'FAST',
+                30                   // Rotación diagonal
+            );
+        }
+    } catch (error) {
+        console.error('No se pudo poner la marca de agua', error);
+    }
 
     // =============================================
     // PIE DE PÁGINA
