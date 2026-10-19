@@ -94,8 +94,7 @@ interface Labor {
         cantidad_total?: number;
         calidad?: {
             excelente?: number;
-            buena?: number;
-            media?: number;
+            media?: number; // Ya no está "buena"
         };
         receta_url?: string;
         fotos?: string[];
@@ -124,19 +123,19 @@ const COLUMNAS = {
 const COLUMNAS_DEFAULT = ['fecha', 'categoria', 'tipo', 'cantidad', 'acciones'];
 
 // =============================================
-// COLORES POR CATEGORÍA (sin emojis)
+// COLORES POR CATEGORÍA (Adaptados a Dark Mode)
 // =============================================
 const colorCategoria = (categoria: string) => {
     switch (categoria) {
-        case 'Siembra': return 'bg-green-100 text-green-800';
-        case 'Riego': return 'bg-cyan-100 text-cyan-800';
-        case 'Fumigación': return 'bg-red-100 text-red-800';
-        case 'Corte': return 'bg-yellow-100 text-yellow-800';
-        case 'Rastrillado': return 'bg-lime-100 text-lime-800';
-        case 'Henificación': return 'bg-amber-100 text-amber-800';
-        case 'Labranza': return 'bg-orange-100 text-orange-800';
-        case 'Arreglos y mantenimiento': return 'bg-gray-100 text-gray-800';
-        default: return 'bg-gray-100 text-gray-800';
+        case 'Siembra': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400';
+        case 'Riego': return 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400';
+        case 'Fumigación': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400';
+        case 'Corte': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
+        case 'Rastrillado': return 'bg-lime-100 text-lime-800 dark:bg-lime-900/30 dark:text-lime-400';
+        case 'Enfardado': return 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400';
+        case 'Labranza': return 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400';
+        case 'Arreglos y mantenimiento': return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
+        default: return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
     }
 };
 
@@ -367,15 +366,15 @@ const LaboresPage = () => {
     return (
         <div className="p-6 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold text-green-700">Labores</h1>
-                    <p className="text-sm text-gray-500">Trazabilidad digital</p>
+                    <h1 className="text-3xl font-bold text-[#0f7a50] dark:text-[#34d399]">Labores</h1>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Trazabilidad digital</p>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
+                            <Button variant="outline" className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                                 <Settings2 className="mr-2 h-4 w-4" /> Columnas
                             </Button>
                         </DropdownMenuTrigger>
@@ -412,30 +411,31 @@ const LaboresPage = () => {
                         variant="outline"
                         onClick={handleExportarPDF}
                         disabled={labores.length === 0}
+                        className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800"
                     >
                         <Download className="mr-2 h-4 w-4" /> Exportar PDF
                     </Button>
 
                     <Button
                         onClick={() => setModalCrearAbierto(true)}
-                        className="bg-blue-600 hover:bg-blue-700"
+                        className="bg-[#0f7a50] hover:bg-[#064e3b] text-white"
                     >
-                        <Plus className="mr-2 h-4 w-4" /> Nueva Labor
+                        <Plus className="mr-2 h-4 w-4" /> Nueva labor
                     </Button>
                 </div>
             </div>
 
             {/* Filtros */}
-            <Card className="mb-6">
+            <Card className="mb-6 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                 <CardContent className="pt-6">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
-                            <Label className="text-xs">Lote</Label>
+                            <Label className="text-xs text-gray-500 dark:text-gray-400">Lote</Label>
                             <Select
                                 value={loteSeleccionadoId ? String(loteSeleccionadoId) : ''}
                                 onValueChange={(v) => setLoteSeleccionadoId(Number(v))}
                             >
-                                <SelectTrigger>
+                                <SelectTrigger className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700">
                                     <SelectValue placeholder="Seleccionar lote" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -449,20 +449,22 @@ const LaboresPage = () => {
                         </div>
 
                         <div>
-                            <Label className="text-xs">Desde</Label>
+                            <Label className="text-xs text-gray-500 dark:text-gray-400">Desde</Label>
                             <Input
                                 type="date"
                                 value={filtroDesde}
                                 onChange={(e) => setFiltroDesde(e.target.value)}
+                                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
                             />
                         </div>
 
                         <div>
-                            <Label className="text-xs">Hasta</Label>
+                            <Label className="text-xs text-gray-500 dark:text-gray-400">Hasta</Label>
                             <Input
                                 type="date"
                                 value={filtroHasta}
                                 onChange={(e) => setFiltroHasta(e.target.value)}
+                                className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700"
                             />
                         </div>
                     </div>
@@ -472,31 +474,28 @@ const LaboresPage = () => {
             {/* Tabla */}
             {cargando ? (
                 <div className="text-center py-12">
-                    <p className="text-gray-500">Cargando labores...</p>
+                    <p className="text-gray-500 dark:text-gray-400">Cargando labores...</p>
                 </div>
             ) : labores.length === 0 ? (
-                <Card className="text-center py-12">
+                <Card className="text-center py-12 bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     <CardContent>
-                        <p className="text-gray-500">No hay labores registradas para este lote.</p>
+                        <p className="text-gray-500 dark:text-gray-400">No hay labores registradas para este lote.</p>
                         <Button
                             onClick={() => setModalCrearAbierto(true)}
                             variant="outline"
-                            className="mt-4"
+                            className="mt-4 border-gray-200 dark:border-gray-800"
                         >
                             <Plus className="mr-2 h-4 w-4" /> Registrar la primera
                         </Button>
                     </CardContent>
                 </Card>
             ) : (
-                <Card>
+                <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     <Table>
                         <TableHeader>
-                            <TableRow>
+                            <TableRow className="border-gray-200 dark:border-gray-800">
                                 {ver('fecha') && (
-                                    <TableHead
-                                        className="cursor-pointer select-none"
-                                        onClick={() => handleOrden('fecha')}
-                                    >
+                                    <TableHead className="cursor-pointer select-none text-gray-900 dark:text-gray-300" onClick={() => handleOrden('fecha')}>
                                         <div className="flex items-center gap-1">
                                             Fecha
                                             {ordenPor === 'fecha' && <ArrowUpDown className="h-3 w-3" />}
@@ -504,10 +503,7 @@ const LaboresPage = () => {
                                     </TableHead>
                                 )}
                                 {ver('categoria') && (
-                                    <TableHead
-                                        className="cursor-pointer select-none"
-                                        onClick={() => handleOrden('categoria')}
-                                    >
+                                    <TableHead className="cursor-pointer select-none text-gray-900 dark:text-gray-300" onClick={() => handleOrden('categoria')}>
                                         <div className="flex items-center gap-1">
                                             Categoría
                                             {ordenPor === 'categoria' && <ArrowUpDown className="h-3 w-3" />}
@@ -515,34 +511,28 @@ const LaboresPage = () => {
                                     </TableHead>
                                 )}
                                 {ver('tipo') && (
-                                    <TableHead
-                                        className="cursor-pointer select-none"
-                                        onClick={() => handleOrden('tipo')}
-                                    >
+                                    <TableHead className="cursor-pointer select-none text-gray-900 dark:text-gray-300" onClick={() => handleOrden('tipo')}>
                                         <div className="flex items-center gap-1">
                                             Tipo
                                             {ordenPor === 'tipo' && <ArrowUpDown className="h-3 w-3" />}
                                         </div>
                                     </TableHead>
                                 )}
-                                {ver('maquina') && <TableHead>Máquina</TableHead>}
+                                {ver('maquina') && <TableHead className="text-gray-900 dark:text-gray-300">Máquina</TableHead>}
                                 {ver('cantidad') && (
-                                    <TableHead
-                                        className="cursor-pointer select-none"
-                                        onClick={() => handleOrden('cantidad')}
-                                    >
+                                    <TableHead className="cursor-pointer select-none text-gray-900 dark:text-gray-300" onClick={() => handleOrden('cantidad')}>
                                         <div className="flex items-center gap-1">
                                             Cantidad
                                             {ordenPor === 'cantidad' && <ArrowUpDown className="h-3 w-3" />}
                                         </div>
                                     </TableHead>
                                 )}
-                                {ver('calidad') && <TableHead>Calidad</TableHead>}
-                                {ver('operador') && <TableHead>Operador</TableHead>}
-                                {ver('hectareas') && <TableHead>Hectáreas</TableHead>}
-                                {ver('clima') && <TableHead>Clima</TableHead>}
-                                {ver('archivos') && <TableHead>Archivos</TableHead>}
-                                {ver('acciones') && <TableHead className="text-right">Acciones</TableHead>}
+                                {ver('calidad') && <TableHead className="text-gray-900 dark:text-gray-300">Calidad</TableHead>}
+                                {ver('operador') && <TableHead className="text-gray-900 dark:text-gray-300">Operador</TableHead>}
+                                {ver('hectareas') && <TableHead className="text-gray-900 dark:text-gray-300">Hectáreas</TableHead>}
+                                {ver('clima') && <TableHead className="text-gray-900 dark:text-gray-300">Clima</TableHead>}
+                                {ver('archivos') && <TableHead className="text-gray-900 dark:text-gray-300">Archivos</TableHead>}
+                                {ver('acciones') && <TableHead className="text-right text-gray-900 dark:text-gray-300">Acciones</TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -552,9 +542,9 @@ const LaboresPage = () => {
                                     ...(labor.metadata?.fotos || [])
                                 ];
                                 return (
-                                    <TableRow key={labor.id}>
+                                    <TableRow key={labor.id} className="border-gray-200 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                         {ver('fecha') && (
-                                            <TableCell className="whitespace-nowrap">
+                                            <TableCell className="whitespace-nowrap text-gray-700 dark:text-gray-300">
                                                 {new Date(labor.fecha).toLocaleDateString('es-AR')}
                                             </TableCell>
                                         )}
@@ -566,46 +556,43 @@ const LaboresPage = () => {
                                             </TableCell>
                                         )}
                                         {ver('tipo') && (
-                                            <TableCell className="font-medium">{labor.tipo}</TableCell>
+                                            <TableCell className="font-medium text-gray-900 dark:text-white">{labor.tipo}</TableCell>
                                         )}
                                         {ver('maquina') && (
-                                            <TableCell>
+                                            <TableCell className="text-gray-700 dark:text-gray-300">
                                                 {labor.metadata?.tipo_maquina || labor.metadata?.maquinaria || '—'}
                                                 {labor.metadata?.clasificacion && (
-                                                    <span className="text-xs text-gray-500 ml-1">
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
                                                         ({labor.metadata.clasificacion})
                                                     </span>
                                                 )}
                                             </TableCell>
                                         )}
                                         {ver('cantidad') && (
-                                            <TableCell>
-                                                {labor.metadata?.cantidad_total
-                                                    ? `${labor.metadata.cantidad_total}`
-                                                    : '—'}
+                                            <TableCell className="text-gray-700 dark:text-gray-300">
+                                                {labor.metadata?.cantidad_total ? `${labor.metadata.cantidad_total}` : '—'}
                                             </TableCell>
                                         )}
                                         {ver('calidad') && (
                                             <TableCell>
                                                 {labor.metadata?.calidad ? (
-                                                    <div className="flex gap-2 text-xs">
+                                                    <div className="flex gap-2 text-xs text-gray-700 dark:text-gray-300">
                                                         {labor.metadata.calidad.excelente ? <span>E: {labor.metadata.calidad.excelente}</span> : null}
-                                                        {labor.metadata.calidad.buena ? <span>B: {labor.metadata.calidad.buena}</span> : null}
                                                         {labor.metadata.calidad.media ? <span>M: {labor.metadata.calidad.media}</span> : null}
                                                     </div>
                                                 ) : '—'}
                                             </TableCell>
                                         )}
                                         {ver('operador') && (
-                                            <TableCell>{labor.metadata?.operador || '—'}</TableCell>
+                                            <TableCell className="text-gray-700 dark:text-gray-300">{labor.metadata?.operador || '—'}</TableCell>
                                         )}
                                         {ver('hectareas') && (
-                                            <TableCell>
+                                            <TableCell className="text-gray-700 dark:text-gray-300">
                                                 {labor.metadata?.hectareas ? `${labor.metadata.hectareas} ha` : '—'}
                                             </TableCell>
                                         )}
                                         {ver('clima') && (
-                                            <TableCell>
+                                            <TableCell className="text-gray-700 dark:text-gray-300">
                                                 {labor.clima?.lluvia_ultimos_3_dias !== undefined ? (
                                                     <div className="flex gap-2 text-xs">
                                                         <span>{fmt(labor.clima.lluvia_ultimos_3_dias)}mm</span>
@@ -622,14 +609,12 @@ const LaboresPage = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setArchivoAbierto(adjuntos[0])}
-                                                                className="text-blue-600 hover:underline"
+                                                                className="text-blue-600 hover:underline dark:text-blue-400 dark:hover:text-blue-300"
                                                             >
                                                                 Ver archivo
                                                             </button>
                                                             {adjuntos.length > 1 && (
-                                                                <span className="text-gray-600">
-                                                                    +{adjuntos.length - 1}
-                                                                </span>
+                                                                <span className="text-gray-600 dark:text-gray-400">+{adjuntos.length - 1}</span>
                                                             )}
                                                         </>
                                                     ) : '—'}
@@ -639,30 +624,13 @@ const LaboresPage = () => {
                                         {ver('acciones') && (
                                             <TableCell className="text-right">
                                                 <div className="flex justify-end gap-1">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setLaborDetalle(labor)}
-                                                        title="Ver detalle"
-                                                    >
+                                                    <Button variant="ghost" size="sm" onClick={() => setLaborDetalle(labor)} className="hover:bg-gray-100 dark:hover:bg-gray-800">
                                                         <Eye className="h-4 w-4" />
                                                     </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setLaborAEditar(labor)}
-                                                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
-                                                        title="Editar"
-                                                    >
+                                                    <Button variant="ghost" size="sm" onClick={() => setLaborAEditar(labor)} className="text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/30">
                                                         <Pencil className="h-4 w-4" />
                                                     </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() => setLaborAEliminar(labor)}
-                                                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                        title="Eliminar"
-                                                    >
+                                                    <Button variant="ghost" size="sm" onClick={() => setLaborAEliminar(labor)} className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
                                                         <Trash2 className="h-4 w-4" />
                                                     </Button>
                                                 </div>
@@ -702,21 +670,15 @@ const LaboresPage = () => {
 
             {/* Modal detalle */}
             <Dialog open={!!laborDetalle} onOpenChange={() => setLaborDetalle(null)}>
-                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     <DialogHeader>
-                        <DialogTitle className="text-xl">
-                            {laborDetalle?.tipo}
-                        </DialogTitle>
+                        <DialogTitle className="text-xl text-gray-900 dark:text-white">{laborDetalle?.tipo}</DialogTitle>
                     </DialogHeader>
                     {laborDetalle && (
                         <div className="space-y-4 text-sm">
-                            <div className="flex items-center justify-between">
-                                <p className="text-gray-500">
-                                    {new Date(laborDetalle.fecha).toLocaleDateString('es-AR')}
-                                </p>
-                                <p className="text-gray-500">
-                                    Lote: {loteNombreDetalle}
-                                </p>
+                            <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+                                <p>{new Date(laborDetalle.fecha).toLocaleDateString('es-AR')}</p>
+                                <p>Lote: {loteNombreDetalle}</p>
                             </div>
 
                             <Badge className={colorCategoria(laborDetalle.categoria)}>
@@ -725,25 +687,24 @@ const LaboresPage = () => {
 
                             {laborDetalle.metadata?.tipo_maquina && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">Máquina</p>
-                                    <p>{laborDetalle.metadata.tipo_maquina}</p>
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Máquina</p>
+                                    <p className="text-gray-900 dark:text-gray-200">{laborDetalle.metadata.tipo_maquina}</p>
                                     {laborDetalle.metadata.clasificacion && (
-                                        <p className="text-xs text-gray-500">{laborDetalle.metadata.clasificacion}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{laborDetalle.metadata.clasificacion}</p>
                                     )}
                                     {laborDetalle.metadata.marca_modelo && (
-                                        <p className="text-xs text-gray-500">{laborDetalle.metadata.marca_modelo}</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">{laborDetalle.metadata.marca_modelo}</p>
                                     )}
                                 </div>
                             )}
 
                             {laborDetalle.metadata?.cantidad_total && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">Producción</p>
-                                    <p>Total: {laborDetalle.metadata.cantidad_total}</p>
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Producción</p>
+                                    <p className="text-gray-900 dark:text-gray-200">Total: {laborDetalle.metadata.cantidad_total}</p>
                                     {laborDetalle.metadata.calidad && (
-                                        <div className="text-xs text-gray-600 mt-1">
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
                                             {laborDetalle.metadata.calidad.excelente ? <p>Excelente: {laborDetalle.metadata.calidad.excelente}</p> : null}
-                                            {laborDetalle.metadata.calidad.buena ? <p>Buena: {laborDetalle.metadata.calidad.buena}</p> : null}
                                             {laborDetalle.metadata.calidad.media ? <p>Media: {laborDetalle.metadata.calidad.media}</p> : null}
                                         </div>
                                     )}
@@ -752,31 +713,33 @@ const LaboresPage = () => {
 
                             {laborDetalle.producto && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">Insumo</p>
-                                    <p>
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Insumo</p>
+                                    <p className="text-gray-900 dark:text-gray-200">
                                         {laborDetalle.producto}
                                         {laborDetalle.dosis && ` - ${laborDetalle.dosis} ${laborDetalle.metadata?.unidad || ''}`}
                                     </p>
-                                    {laborDetalle.plaga && <p className="text-xs text-gray-500">Plaga: {laborDetalle.plaga}</p>}
-                                    {laborDetalle.semilla && <p className="text-xs text-gray-500">Variedad: {laborDetalle.semilla}</p>}
+                                    {laborDetalle.plaga && <p className="text-xs text-gray-500 dark:text-gray-400">Plaga: {laborDetalle.plaga}</p>}
+                                    {laborDetalle.semilla && <p className="text-xs text-gray-500 dark:text-gray-400">Variedad: {laborDetalle.semilla}</p>}
                                 </div>
                             )}
 
                             {(laborDetalle.metadata?.operador || laborDetalle.metadata?.maquinaria || laborDetalle.metadata?.hectareas || laborDetalle.metadata?.horas || laborDetalle.metadata?.costo) && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">Ejecución</p>
-                                    {laborDetalle.metadata.operador && <p>Operador: {laborDetalle.metadata.operador}</p>}
-                                    {laborDetalle.metadata.maquinaria && <p>Maquinaria: {laborDetalle.metadata.maquinaria}</p>}
-                                    {laborDetalle.metadata.hectareas && <p>Hectáreas: {laborDetalle.metadata.hectareas} ha</p>}
-                                    {laborDetalle.metadata.horas && <p>Horas: {laborDetalle.metadata.horas} hs</p>}
-                                    {laborDetalle.metadata.costo && <p>Costo: ${laborDetalle.metadata.costo}</p>}
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Ejecución</p>
+                                    <div className="text-gray-900 dark:text-gray-200">
+                                        {laborDetalle.metadata.operador && <p>Operador: {laborDetalle.metadata.operador}</p>}
+                                        {laborDetalle.metadata.maquinaria && <p>Maquinaria: {laborDetalle.metadata.maquinaria}</p>}
+                                        {laborDetalle.metadata.hectareas && <p>Hectáreas: {laborDetalle.metadata.hectareas} ha</p>}
+                                        {laborDetalle.metadata.horas && <p>Horas: {laborDetalle.metadata.horas} hs</p>}
+                                        {laborDetalle.metadata.costo && <p>Costo: ${laborDetalle.metadata.costo}</p>}
+                                    </div>
                                 </div>
                             )}
 
                             {laborDetalle.clima && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">Clima</p>
-                                    <div className="text-xs space-y-0.5">
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Clima</p>
+                                    <div className="text-xs space-y-0.5 text-gray-700 dark:text-gray-300">
                                         {laborDetalle.clima.lluvia_ultimos_3_dias !== undefined && (
                                             <p>Lluvia (3 días): {fmt(laborDetalle.clima.lluvia_ultimos_3_dias)} mm</p>
                                         )}
@@ -795,7 +758,7 @@ const LaboresPage = () => {
 
                             {adjuntosDetalle.length > 0 && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                                         Archivos ({adjuntosDetalle.length})
                                     </p>
                                     <div className="space-y-2 mt-1">
@@ -804,7 +767,7 @@ const LaboresPage = () => {
                                                 <button
                                                     type="button"
                                                     onClick={() => setArchivoAbierto(url)}
-                                                    className="text-blue-600 hover:underline text-sm"
+                                                    className="text-blue-600 hover:underline text-sm dark:text-blue-400 dark:hover:text-blue-300"
                                                 >
                                                     Ver archivo {i + 1}
                                                 </button>
@@ -812,7 +775,7 @@ const LaboresPage = () => {
                                                     <img
                                                         src={url}
                                                         alt=""
-                                                        className="w-12 h-12 object-cover rounded border cursor-pointer"
+                                                        className="w-12 h-12 object-cover rounded border dark:border-gray-700 cursor-pointer"
                                                         onClick={() => setArchivoAbierto(url)}
                                                     />
                                                 )}
@@ -824,12 +787,12 @@ const LaboresPage = () => {
 
                             {laborDetalle.observaciones && (
                                 <div>
-                                    <p className="font-semibold text-xs text-gray-500 uppercase tracking-wide">Observaciones</p>
-                                    <p className="italic text-gray-700">{laborDetalle.observaciones}</p>
+                                    <p className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Observaciones</p>
+                                    <p className="italic text-gray-700 dark:text-gray-300">{laborDetalle.observaciones}</p>
                                 </div>
                             )}
 
-                            <div className="flex gap-2 pt-4 border-t">
+                            <div className="flex gap-2 pt-4 border-t border-gray-200 dark:border-gray-800">
                                 <Button
                                     type="button"
                                     variant="outline"
@@ -838,7 +801,7 @@ const LaboresPage = () => {
                                         setLaborDetalle(null);
                                         setLaborAEditar(labor);
                                     }}
-                                    className="flex-1"
+                                    className="flex-1 border-gray-200 dark:border-gray-800"
                                 >
                                     <Pencil className="mr-2 h-4 w-4" /> Editar
                                 </Button>
@@ -850,7 +813,7 @@ const LaboresPage = () => {
                                         setLaborDetalle(null);
                                         setLaborAEliminar(labor);
                                     }}
-                                    className="flex-1 text-red-600 hover:text-red-700 border-red-200"
+                                    className="flex-1 text-red-600 hover:text-red-700 border-red-200 dark:border-red-900/50 dark:hover:bg-red-950/30 dark:text-red-400"
                                 >
                                     <Trash2 className="mr-2 h-4 w-4" /> Eliminar
                                 </Button>
@@ -862,9 +825,9 @@ const LaboresPage = () => {
 
             {/* Modal de imagen/PDF */}
             <Dialog open={!!archivoAbierto} onOpenChange={() => setArchivoAbierto(null)}>
-                <DialogContent className="max-w-4xl max-h-[90vh]">
+                <DialogContent className="max-w-4xl max-h-[90vh] bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     <DialogHeader>
-                        <DialogTitle>Vista previa</DialogTitle>
+                        <DialogTitle className="text-gray-900 dark:text-white">Vista previa</DialogTitle>
                     </DialogHeader>
                     {archivoAbierto && (
                         <div className="flex items-center justify-center">
@@ -888,14 +851,14 @@ const LaboresPage = () => {
 
             {/* AlertDialog eliminar */}
             <AlertDialog open={!!laborAEliminar} onOpenChange={() => setLaborAEliminar(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>¿Eliminar esta labor?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Estás por eliminar la labor <strong>{laborAEliminar?.tipo}</strong> del{' '}
-                            <strong>{laborAEliminar && new Date(laborAEliminar.fecha).toLocaleDateString('es-AR')}</strong>.
+                        <AlertDialogTitle className="text-gray-900 dark:text-white">¿Eliminar esta labor?</AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-500 dark:text-gray-400">
+                            Estás por eliminar la labor <strong className="text-gray-900 dark:text-white">{laborAEliminar?.tipo}</strong> del{' '}
+                            <strong className="text-gray-900 dark:text-white">{laborAEliminar && new Date(laborAEliminar.fecha).toLocaleDateString('es-AR')}</strong>.
                             <br /><br />
-                            Esta acción <strong>no se puede deshacer</strong>.
+                            Esta acción <strong className="text-gray-900 dark:text-white">no se puede deshacer</strong>.
                             {laborAEliminar?.metadata?.fotos && laborAEliminar.metadata.fotos.length > 0 && (
                                 <>
                                     <br /><br />
@@ -911,10 +874,10 @@ const LaboresPage = () => {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border-gray-300 dark:border-gray-700">Cancelar</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleEliminar}
-                            className="bg-red-600 hover:bg-red-700"
+                            className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             Sí, eliminar
                         </AlertDialogAction>

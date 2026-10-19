@@ -79,7 +79,7 @@ const LaborFormModal = ({ isOpen, onClose, onSuccess, lotes, laborInicial }: Lab
     // =============================================
     // Título según modo
     // =============================================
-    const titulo = esEdicion ? 'Editar Labor' : 'Nueva Labor';
+    const titulo = esEdicion ? 'Editar labor' : 'Nueva labor';
     const descripcion = esEdicion
         ? 'Modificá los datos de la labor'
         : 'Registrá una labor en el cuaderno de campo digital';

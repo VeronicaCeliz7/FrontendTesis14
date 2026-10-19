@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils';
 import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 
 const navItems = [
-  { path: '/', label: 'Dashboard', icon: Home },
+  { path: '/', label: 'Stock y ventas', icon: Home },
   { path: '/labores', label: 'Labores', icon: Sprout },
-  { path: '/lotes', label: 'Mis Lotes', icon: Map },
+  { path: '/lotes', label: 'Mis lotes', icon: Map },
 ];
 
 interface SidebarProps {

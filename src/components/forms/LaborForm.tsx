@@ -461,7 +461,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                 {/* INSUMO (Fumigación) + RECETA */}
                 {mostrarInsumo && (
                     <div className="space-y-4 p-4 bg-red-50 rounded-lg border-l-4 border-red-500">
-                        <p className="font-semibold text-sm text-red-800">Insumo y Receta</p>
+                        <p className="font-semibold text-sm text-red-800">Insumo y receta</p>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2">
                                 <Label>Producto</Label>
@@ -491,7 +491,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
 
                         {/* BOTÓN ESPECÍFICO PARA LA RECETA */}
                         <div className="pt-2 border-t border-red-200">
-                            <Label className="mb-2 block">Receta de Fumigación (Obligatoria)</Label>
+                            <Label className="mb-2 block">Receta de fumigación (Obligatoria)</Label>
                             <input
                                 ref={recetaInputRef}
                                 type="file"
@@ -506,7 +506,7 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                                 onClick={() => recetaInputRef.current?.click()}
                                 disabled={subiendo}
                             >
-                                <Camera className="mr-2 h-4 w-4" /> {recetaUrl ? 'Cambiar Receta' : 'Adjuntar Receta'}
+                                <Camera className="mr-2 h-4 w-4" /> {recetaUrl ? 'Cambiar receta' : 'Adjuntar receta'}
                             </Button>
                             {recetaUrl && (
                                 <div className="mt-2 text-sm text-green-600 flex items-center justify-between bg-white p-2 rounded border">
@@ -627,9 +627,9 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                         {cargando ? (
                             <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
                         ) : esEdicion ? (
-                            'Actualizar Labor'
+                            'Actualizar labor'
                         ) : (
-                            'Guardar Labor'
+                            'Guardar labor'
                         )}
                     </Button>
                 </div>
