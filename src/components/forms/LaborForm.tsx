@@ -73,7 +73,7 @@ const MAQUINAS_POR_TIPO: Record<string, string[]> = {
 
 const CLASIFICACIONES_CUTTER = ['Sin cutter', 'Con cutter'];
 const UNIDADES_DOSIS = ['L/ha', 'kg/ha', 'g/ha', 'cc/ha', 'L', 'kg'];
-const selectClass = "w-full px-3 py-2 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-green-500";
+const selectClass = "w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-[#0f7a50] focus:border-[#0f7a50] text-gray-900 dark:text-gray-100 transition-colors";
 
 // =============================================
 // CONFIG CLOUDINARY
@@ -520,8 +520,9 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
 
                 {/* SEMILLA (Siembra) */}
                 {mostrarSemilla && (
-                    <div className="space-y-4 p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
-                        <p className="font-semibold text-sm text-green-800">Semilla</p>
+    <div className="space-y-4 p-4 bg-[#0f7a50]/5 dark:bg-[#0f7a50]/10 rounded-lg border-l-4 border-[#0f7a50]">
+        <p className="font-semibold text-sm text-[#0f7a50] dark:text-[#34d399]">Semilla</p>
+        ...
                         <div>
                             <Label>Variedad</Label>
                             <Input value={semilla} onChange={(e) => setSemilla(e.target.value)} placeholder="Ej: WL 903, Alfalfa 55" className="mt-1" />
@@ -623,15 +624,19 @@ const LaborForm = ({ loteId, laborInicial, onSuccess, onCancel }: LaborFormProps
                     <Button type="button" variant="outline" onClick={onCancel} disabled={cargando} className="flex-1">
                         Cancelar
                     </Button>
-                    <Button type="submit" disabled={cargando} className="flex-1 bg-green-600 hover:bg-green-700">
-                        {cargando ? (
-                            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
-                        ) : esEdicion ? (
-                            'Actualizar labor'
-                        ) : (
-                            'Guardar labor'
-                        )}
-                    </Button>
+           <Button 
+    type="submit" 
+    disabled={cargando} 
+    className="flex-1 bg-gradient-to-r from-[#0f7a50] to-[#064e3b] hover:from-[#0a6140] hover:to-[#022c22] text-white shadow-md transition-all duration-200"
+>
+    {cargando ? (
+        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Guardando...</>
+    ) : esEdicion ? (
+        'Actualizar labor'
+    ) : (
+        'Guardar labor'
+    )}
+</Button>
                 </div>
             </form>
 
