@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import * as turf from '@turf/turf';
+import { MapPin } from 'lucide-react'; // <-- Agregado para el ícono de la tarjeta
 import { 
     listarLotesPorCampo, 
     crearLote, 
@@ -242,7 +243,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
 
     const marker = L.marker([e.latlng.lat, e.latlng.lng], {
       icon: L.divIcon({
-        html: '<div style="background:#22c55e; width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>',
+        html: '<div style="background:#0f7a50; width:12px;height:12px;border-radius:50%;border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,.4);"></div>',
         iconSize: [12, 12],
         iconAnchor: [6, 6],
       }),
@@ -258,14 +259,14 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       const lineCoords = puntosRef.current.map(p => [p[1], p[0]]);
       if (puntosRef.current.length >= 3) {
         lineasRef.current = L.polygon(lineCoords as any, {
-          color: '#ef4444',
+          color: '#0f7a50',
           weight: 2,
-          fillColor: '#ef4444',
+          fillColor: '#0f7a50',
           fillOpacity: 0.1,
         }).addTo(map);
       } else {
         lineasRef.current = L.polyline(lineCoords as any, {
-          color: '#ef4444',
+          color: '#0f7a50',
           weight: 2,
         }).addTo(map);
       }
@@ -295,37 +296,22 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
 
         const coords = geojson.coordinates[0].map((p: number[]) => [p[1], p[0]]);
 
-        const decision = decisionesRef.current.get(lote.id);
-        const semaforo = decision?.semaforo || '🟡 Esperar';
+        // 🎯 FONDO VERDE PARA TODOS LOS LOTES (SIN SEMÁFORO)
+        const color = '#0f7a50';
 
-        const colorMap: Record<string, string> = {
-          '🟢 Corte': '#22c55e',
-          '🟡 Esperar': '#eab308',
-          '🔴 Riesgo': '#ef4444',
-        };
-        const color = colorMap[semaforo] || '#3b82f6';
-
-        // 🆕 Popup simplificado: sin "Riesgo" duplicado
+        // 🎯 POPUP SIN "ESPERAR", SOLO DATOS
         const popupHTML = `
           <div style="font-family: system-ui, sans-serif; padding: 4px; min-width: 220px;">
             <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span style="font-size: 24px;">🌾</span>
+              <span style="font-size: 24px;">📍</span>
               <strong style="font-size: 16px;">${lote.nombre || 'Sin nombre'}</strong>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-              <span style="font-size: 24px;">${semaforo}</span>
             </div>
             <hr style="margin: 6px 0; border: 0.5px solid #e5e7eb;">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; font-size: 13px;">
               <span style="color: #6b7280;">📐 Hectáreas</span>
               <span style="font-weight: 500;">${formatearArea(lote.hectareas)} ha</span>
               <span style="color: #6b7280;">📊 NDVI</span>
-              <span style="font-weight: 500;">${formatearNDVI(decision?.ndvi_actual)}</span>
-            </div>
-            <hr style="margin: 6px 0; border: 0.5px solid #e5e7eb;">
-            <div style="font-size: 12px; color: #4b5563; line-height: 1.4;">
-              <div style="font-weight: 600; color: #1f2937;">📝 Recomendación</div>
-              <div style="margin-top: 2px;">${decision?.recomendacion || 'Esperando datos...'}</div>
+              <span style="font-weight: 500;">${formatearNDVI(decisionesRef.current.get(lote.id)?.ndvi_actual)}</span>
             </div>
           </div>
         `;
@@ -339,7 +325,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
           color: color,
           weight: 3,
           fillColor: color,
-          fillOpacity: 0.2,
+          fillOpacity: 0.15,
         }).bindPopup(popup).addTo(layer);
 
       } catch (err) {
@@ -907,7 +893,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       {/* HEADER COMPACTO */}
       <div className="flex items-center justify-between gap-2 flex-shrink-0">
         <h1 className="text-lg sm:text-2xl font-extrabold text-gray-900 dark:text-white">
-          Mis Lotes
+          Mis lotes
         </h1>
         <div className="flex gap-2">
           {!modoDibujo ? (
@@ -915,13 +901,13 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
               onClick={activarDibujo}
               disabled={isUpdating || !campoSeleccionado}
               title={!campoSeleccionado ? 'Primero creá un campo' : 'Dibujar lote'}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
+              className="bg-[#0f7a50] hover:bg-[#064e3b] disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
             >
               ✏️ Dibujar
             </button>
           ) : (
             <>
-              <button onClick={terminarDibujo} className="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium">
+              <button onClick={terminarDibujo} className="bg-[#0f7a50] hover:bg-[#064e3b] text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium">
                 ✅ Terminar
               </button>
               <button onClick={cancelarDibujo} className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium">
@@ -1001,7 +987,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
             className={`absolute bottom-2 left-2 z-[1000] px-3 py-1.5 rounded-lg shadow-lg text-xs font-medium transition-colors ${
               mostrarNDVI
                 ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-green-600 hover:bg-green-700 text-white'
+                : 'bg-[#0f7a50] hover:bg-[#064e3b] text-white'
             }`}
           >
             {mostrarNDVI ? '❌ Ocultar NDVI' : '🌿 Mostrar NDVI'}
@@ -1012,7 +998,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
         <div className="flex flex-col min-h-0 lg:max-h-full">
           <div className="flex items-center justify-between mb-2 flex-shrink-0">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              📦 Lotes ({filteredLotes.length})
+               Lotes ({filteredLotes.length})
             </h2>
           </div>
 
@@ -1020,31 +1006,24 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
             {filteredLotes.length > 0 ? (
               filteredLotes.map((lote) => {
                 const decision = decisionesRef.current.get(lote.id);
-                const semaforo = decision?.semaforo || '🟡 Esperar';
                 const ndvi = formatearNDVI(decision?.ndvi_actual);
-
-                const colorMap: Record<string, string> = {
-                  '🟢 Corte': 'border-l-4 border-l-[hsl(var(--semaforo-verde))] bg-card',
-                  '🟡 Esperar': 'border-l-4 border-l-[hsl(var(--semaforo-amarillo))] bg-card',
-                  '🔴 Riesgo': 'border-l-4 border-l-[hsl(var(--semaforo-rojo))] bg-card',
-                };
-                const borderColor = colorMap[semaforo] || 'border-gray-300 bg-white dark:bg-gray-800';
-
+                
+                // 🎯 TARJETA LIMPIA SIN SEMÁFORO
                 return (
                   <div
                     key={lote.id}
-                    className={`rounded-lg p-3 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition ${borderColor} ${loteSeleccionadoId === lote.id ? 'ring-2 ring-green-500' : ''}`}
+                    className={`rounded-lg p-3 shadow-sm text-sm flex justify-between items-center cursor-pointer hover:shadow-md transition border-l-4 border-l-[#0f7a50] bg-white dark:bg-gray-900 ${loteSeleccionadoId === lote.id ? 'ring-2 ring-[#0f7a50]' : ''}`}
                     onClick={() => abrirModalGrafico(lote.id)}
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xl flex-shrink-0" title={decision?.motivo || 'Sin decisión'}>
-                        {semaforo}
+                      <span className="text-xl flex-shrink-0 text-[#0f7a50]">
+                        <MapPin size={20} />
                       </span>
                       <div className="truncate">
                         <b className="truncate block text-gray-900 dark:text-white text-sm">{lote.nombre}</b>
                         <span className="text-gray-500 dark:text-gray-400 text-xs">
                           {formatearArea(lote.hectareas)} ha
-                          {ndvi !== 'N/A' && <> • {ndvi}</>}
+                          {ndvi !== 'N/A' && <> • NDVI: {ndvi}</>}
                         </span>
                       </div>
                     </div>
@@ -1116,17 +1095,17 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
       {mostrarModalEdicion && loteEditando && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-xl">
-            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">✏️ Editar Lote</h3>
+            <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">✏️ Editar lote</h3>
             <form onSubmit={handleGuardarEdicion}>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Nombre del Lote *
+                  Nombre del lote *
                 </label>
                 <input
                   type="text"
                   value={loteEditando.nombre || ''}
                   onChange={(e) => setLoteEditando({ ...loteEditando, nombre: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0f7a50] bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   required
                 />
               </div>
@@ -1141,14 +1120,14 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                   min="0.01"
                   value={loteEditando.hectareas || ''}
                   onChange={(e) => setLoteEditando({ ...loteEditando, hectareas: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0f7a50] bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
                   required
                 />
               </div>
 
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  ID del Lote (solo lectura)
+                  ID del lote (solo lectura)
                 </label>
                 <input
                   type="text"
@@ -1167,7 +1146,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                   onClick={() => activarRedibujo(loteEditando)}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-colors text-sm font-medium"
                 >
-                  🔄 Redibujar Polígono
+                  🔄 Redibujar polígono
                 </button>
               </div>
 
@@ -1187,9 +1166,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                 <button
                   type="submit"
                   disabled={isUpdating}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
+                  className="px-4 py-2 bg-[#0f7a50] hover:bg-[#064e3b] disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
                 >
-                  {isUpdating ? '⏳ Guardando...' : '💾 Guardar Cambios'}
+                  {isUpdating ? '⏳ Guardando...' : '💾 Guardar cambios'}
                 </button>
               </div>
             </form>
@@ -1217,7 +1196,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                   handleGuardarNuevoLote();
                 }
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-4"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0f7a50] bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-4"
             />
             <div className="flex justify-end gap-2">
               <button
@@ -1231,9 +1210,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                 type="button"
                 onClick={handleGuardarNuevoLote}
                 disabled={isUpdating || !nombreNuevoLote.trim()}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
+                className="px-4 py-2 bg-[#0f7a50] hover:bg-[#064e3b] disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
               >
-                {isUpdating ? '⏳ Guardando...' : '💾 Guardar Lote'}
+                {isUpdating ? '⏳ Guardando...' : '💾 Guardar lote'}
               </button>
             </div>
           </div>
@@ -1260,7 +1239,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                   confirmarNuevoCampo();
                 }
               }}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-4"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0f7a50] bg-white dark:bg-gray-800 text-gray-900 dark:text-white mb-4"
             />
             <div className="flex justify-end gap-2">
               <button
@@ -1274,7 +1253,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                 type="button"
                 onClick={confirmarNuevoCampo}
                 disabled={isUpdating || !nombreNuevoCampo.trim()}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
+                className="px-4 py-2 bg-[#0f7a50] hover:bg-[#064e3b] disabled:bg-green-400 disabled:cursor-not-allowed text-white rounded-md transition-colors font-medium"
               >
                 {isUpdating ? '⏳ Guardando...' : '💾 Crear campo'}
               </button>
@@ -1302,7 +1281,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
 
             <button
               onClick={abrirModalNuevoCampo}
-              className="w-full bg-green-600 hover:bg-green-700 text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
+              className="w-full bg-[#0f7a50] hover:bg-[#064e3b] text-white rounded-lg px-4 py-2.5 text-sm font-medium transition-colors"
             >
               + Cargar mi primer campo
             </button>
