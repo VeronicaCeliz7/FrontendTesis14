@@ -11,22 +11,33 @@ import CortesPage from './pages/CortesPage';
 import AlertasPage from './pages/AlertasPage';
 import Layout from './components/layout/Layout';
 import { useState } from 'react';
-// ✅ IMPORTAR TOASTER
 import { Toaster } from 'react-hot-toast';
 
-
-
+// 👇 NUEVA FUNCIÓN PARA DETECTAR BOTS
+const isBot = () => {
+  if (typeof navigator === 'undefined') return false;
+  return /bot|whatsapp|facebook|twitter|telegram|linkedin|slack|discord|preview|skype/i.test(navigator.userAgent);
+};
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
+  
+  // 👇 SI ES UN BOT, LO DEJAMOS PASAR A LEER EL INDEX.HTML
+  if (!isAuthenticated && isBot()) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#064e3b', color: 'white' }}>
+        <h1>AlfaTrace - Trazabilidad digital</h1>
+      </div>
+    );
+  }
+
+  // Si es humano y no está logueado, al login
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function App() {
-  // ✅ Estado para la búsqueda
   const [searchQuery, setSearchQuery] = useState('');
 
-  // ✅ Función que se pasa al Layout
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     console.log('🔍 Buscando:', query);
@@ -36,7 +47,6 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-          {/* ✅ TOASTER GLOBAL - Disponible en toda la app */}
           <Toaster 
             position="top-right"
             toastOptions={{
@@ -69,7 +79,6 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/registro" element={<RegisterPage />} />
             
-                        
             {/* Rutas protegidas */}
             <Route path="/" element={
               <ProtectedRoute>
