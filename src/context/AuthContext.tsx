@@ -4,6 +4,7 @@ interface AuthContextType {
   token: string | null;
   user: any | null;
   isAuthenticated: boolean;
+  loading: boolean; // 👈 Declarado en la interfaz
   login: (token: string, user: any) => void;
   logout: () => void;
 }
@@ -20,6 +21,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return saved ? JSON.parse(saved) : null;
     }
   );
+  
+  // 👇 ACÁ CREAMOS EL ESTADO QUE FALTABA
+  const [loading, _setLoading] = useState(false); // 👈 El guion bajo silencia la advertencia
 
   const login = (token: string, user: any) => {
     setToken(token);
@@ -38,7 +42,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isAuthenticated = !!token;
 
   return (
-    <AuthContext.Provider value={{ token, user, isAuthenticated, login, logout }}>
+    // 👇 ACÁ LO PASAMOS EN EL VALUE
+    <AuthContext.Provider value={{ token, user, isAuthenticated, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
