@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import LotesPage from './pages/LotesPage';
 import LaboresPage from './pages/LaboresPage';
@@ -78,7 +79,7 @@ function App() {
             {/* Rutas públicas */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/registro" element={<RegisterPage />} />
-            
+            <Route path="/update-password" element={<UpdatePasswordPage />} />
             {/* Rutas protegidas */}
             <Route path="/" element={
               <ProtectedRoute>

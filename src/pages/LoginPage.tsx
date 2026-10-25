@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader } from '@/co
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 import api from '../lib/axios';
+import { ForgotPasswordModal } from '../components/forms/ForgotPasswordModal';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('campo@alfalfa.com');
@@ -77,9 +78,7 @@ const LoginPage = () => {
                     Contraseña
                   </Label>
                   {/* Color verde marca para "¿Olvidaste tu contraseña?" */}
-                  <a href="#" className="text-sm sm:text-base text-[#0f7a50] hover:text-[#064e3b] dark:text-[#34d399] dark:hover:text-[#6ee7b7] font-medium transition-colors">
-                    ¿Olvidaste tu contraseña?
-                  </a>
+                 <ForgotPasswordModal />
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
