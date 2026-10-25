@@ -4,7 +4,6 @@ import { AuthProvider } from './context/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import DashboardPage from './pages/DashboardPage';
 import LotesPage from './pages/LotesPage';
 import LaboresPage from './pages/LaboresPage';
@@ -13,17 +12,28 @@ import AlertasPage from './pages/AlertasPage';
 import Layout from './components/layout/Layout';
 import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
+import { CookieBanner } from "./components/common/CookieBanner";
 
-// 👇 NUEVA FUNCIÓN PARA DETECTAR BOTS
+// 👇 1. DETECCIÓN DE BOTS (Para WhatsApp)
 const isBot = () => {
   if (typeof navigator === 'undefined') return false;
   return /bot|whatsapp|facebook|twitter|telegram|linkedin|slack|discord|preview|skype/i.test(navigator.userAgent);
 };
 
+// 👇 2. PROTECTED ROUTE CON "LOADING"
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
-  
-  // 👇 SI ES UN BOT, LO DEJAMOS PASAR A LEER EL INDEX.HTML
+  const { isAuthenticated, loading } = useAuth();
+
+  // Si está cargando, mostramos un cartel para no patear al usuario
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-green-50 dark:bg-gray-950">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0f7a50]"></div>
+      </div>
+    );
+  }
+
   if (!isAuthenticated && isBot()) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#064e3b', color: 'white' }}>
@@ -32,7 +42,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Si es humano y no está logueado, al login
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
@@ -52,35 +61,17 @@ function App() {
             position="top-right"
             toastOptions={{
               duration: 3000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-                padding: '16px',
-                borderRadius: '8px',
-              },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: '#22c55e',
-                  secondary: '#fff',
-                },
-              },
-              error: {
-                duration: 4000,
-                iconTheme: {
-                  primary: '#ef4444',
-                  secondary: '#fff',
-                },
-              },
+              style: { background: '#363636', color: '#fff', padding: '16px', borderRadius: '8px' },
+              success: { duration: 3000, iconTheme: { primary: '#22c55e', secondary: '#fff' } },
+              error: { duration: 4000, iconTheme: { primary: '#ef4444', secondary: '#fff' } },
             }}
           />
           
           <Routes>
-            {/* Rutas públicas */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/registro" element={<RegisterPage />} />
             <Route path="/update-password" element={<UpdatePasswordPage />} />
-            {/* Rutas protegidas */}
+            
             <Route path="/" element={
               <ProtectedRoute>
                 <Layout onSearch={handleSearch}>
@@ -121,6 +112,8 @@ function App() {
               </ProtectedRoute>
             } />
           </Routes>
+          
+                 <CookieBanner />
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
