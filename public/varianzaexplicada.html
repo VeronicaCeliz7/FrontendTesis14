@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Varianza, R² y Poder Predictivo — Guía de Estudio</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --surface: #1a2129;
+    --surface-2: #232d38;
+    --accent: #4fd1c5;
+    --accent-2: #f6ad55;
+    --accent-3: #fc8181;
+    --text: #e2e8f0;
+    --text-dim: #a0aec0;
+    --border: #2d3748;
+    --code-bg: #0d1117;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+  }
+  header {
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 24px;
+    margin-bottom: 40px;
+  }
+  h1 {
+    font-size: 2.2em;
+    margin: 0 0 8px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  .subtitle {
+    color: var(--text-dim);
+    font-size: 1.05em;
+    margin: 0;
+  }
+  h2 {
+    font-size: 1.6em;
+    color: var(--accent);
+    margin-top: 48px;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  h3 {
+    font-size: 1.2em;
+    color: var(--accent-2);
+    margin-top: 28px;
+  }
+  p { margin: 12px 0; }
+  strong { color: #fff; }
+  em { color: var(--accent-2); font-style: normal; }
+
+  .callout {
+    background: var(--surface);
+    border-left: 4px solid var(--accent);
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-radius: 4px;
+  }
+  .callout.warn {
+    border-left-color: var(--accent-3);
+  }
+  .callout.tip {
+    border-left-color: var(--accent-2);
+  }
+  .callout .label {
+    font-size: 0.75em;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .callout.warn .label { color: var(--accent-3); }
+  .callout.tip .label { color: var(--accent-2); }
+
+  code {
+    font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    background: var(--code-bg);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 16px 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    overflow-x: auto;
+    margin: 16px 0;
+    line-height: 1.5;
+  }
+  pre code {
+    background: none;
+    color: var(--text);
+    padding: 0;
+    font-size: 0.88em;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 0.95em;
+    background: var(--surface);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  th {
+    background: var(--surface-2);
+    color: var(--accent);
+    text-align: left;
+    padding: 12px 14px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover { background: var(--surface-2); }
+
+  .formula {
+    background: var(--code-bg);
+    border: 1px solid var(--accent);
+    padding: 20px;
+    border-radius: 6px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.05em;
+    margin: 20px 0;
+    color: var(--accent);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    margin: 24px 0;
+  }
+  .card {
+    background: var(--surface);
+    padding: 18px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .card h4 {
+    margin: 0 0 8px;
+    color: var(--accent-2);
+    font-size: 1em;
+  }
+  .card p {
+    margin: 0;
+    font-size: 0.92em;
+    color: var(--text-dim);
+  }
+
+  .r2-scale {
+    display: flex;
+    align-items: center;
+    margin: 24px 0;
+    font-family: monospace;
+  }
+  .r2-bar {
+    display: flex;
+    width: 100%;
+    height: 40px;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .r2-segment {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: #000;
+  }
+
+  .highlight-box {
+    background: linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+    border: 1px solid var(--accent);
+    padding: 20px 24px;
+    border-radius: 8px;
+    margin: 24px 0;
+  }
+  .highlight-box p:first-child { margin-top: 0; }
+  .highlight-box p:last-child { margin-bottom: 0; }
+
+  .toc {
+    background: var(--surface);
+    padding: 20px 24px;
+    border-radius: 8px;
+    margin: 24px 0 32px;
+    border: 1px solid var(--border);
+  }
+  .toc h3 {
+    margin-top: 0;
+    color: var(--accent);
+    font-size: 1em;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .toc ol {
+    margin: 8px 0 0;
+    padding-left: 20px;
+  }
+  .toc li {
+    margin: 4px 0;
+    color: var(--text-dim);
+  }
+  .toc a {
+    color: var(--text);
+    text-decoration: none;
+  }
+  .toc a:hover { color: var(--accent); }
+
+  .qa-item {
+    background: var(--surface);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin: 12px 0;
+    border-left: 3px solid var(--accent-2);
+  }
+  .qa-item .q {
+    font-weight: 600;
+    color: var(--accent-2);
+    margin-bottom: 6px;
+  }
+  .qa-item .a {
+    color: var(--text);
+    font-size: 0.95em;
+  }
+
+  ul li, ol li { margin: 6px 0; }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 0.9em;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<header>
+  <h1>Varianza, R² y Poder Predictivo</h1>
+  <p class="subtitle">Guía de estudio para el final — TP NDVI + Clima</p>
+</header>
+
+<nav class="toc">
+  <h3>Contenido</h3>
+  <ol>
+    <li><a href="#s1">La idea central: señal vs ruido</a></li>
+    <li><a href="#s2">Qué es el R² realmente</a></li>
+    <li><a href="#s3">R² vs MAE: por qué importan los dos</a></li>
+    <li><a href="#s4">El "presupuesto" de varianza</a></li>
+    <li><a href="#s5">Los dos significados de "varianza" en ML</a></li>
+    <li><a href="#s6">Por qué N=84 es un problema de varianza</a></li>
+    <li><a href="#s7">Asociación ≠ causalidad</a></li>
+    <li><a href="#s8">Tabla resumen: tu TP en clave de varianza</a></li>
+    <li><a href="#s9">Preguntas frecuentes del final</a></li>
+  </ol>
+</nav>
+
+<section id="s1">
+<h2>1. La idea central: señal vs ruido</h2>
+
+<p>Cualquier valor que observes se descompone en dos partes:</p>
+
+<div class="formula">Valor observado = Señal (predecible) + Ruido (impredecible)</div>
+
+<p>La <strong>varianza</strong> mide cuánto se dispersa el valor observado alrededor de su promedio. Es decir: <em>cuánta variación total hay en los datos</em>.</p>
+
+<div class="highlight-box">
+  <p><strong>La pregunta clave del poder predictivo:</strong></p>
+  <p>¿Cuánta de esa variación total es señal (predecible) y cuánta es ruido (impredecible)?</p>
+</div>
+
+<p>Un modelo <strong>no puede predecir ruido</strong>. Solo puede capturar la parte de la varianza que es señal. Por eso la varianza es el "terreno de juego" donde el modelo compite: cuanta más varianza sea señal, mejor puede predecir.</p>
+</section>
+
+<section id="s2">
+<h2>2. Qué es el R² realmente</h2>
+
+<p>R² es una métrica que se usa <strong>solo en regresión</strong>. Mide qué proporción de la variación del target logra explicar tu modelo, comparado con predecir siempre el promedio.</p>
+
+<div class="formula">
+R² = 1 − (SS_res / SS_tot)
+</div>
+
+<p>Donde:</p>
+<ul>
+  <li><strong>SS_res</strong> (Suma de Cuadrados Residual) = cuánto se equivoca tu modelo.</li>
+  <li><strong>SS_tot</strong> (Suma de Cuadrados Total) = cuánto varía el target alrededor de su promedio.</li>
+</ul>
+
+<p>Traducido:</p>
+
+<div class="formula">
+R² = 1 − (error del modelo / variación total del target)
+</div>
+
+<h3>Cómo interpretarlo</h3>
+
+<div class="r2-scale">
+  <div class="r2-bar">
+    <div class="r2-segment" style="width: 20%; background: #fc8181;">Negativo</div>
+    <div class="r2-segment" style="width: 20%; background: #f6ad55;">0.0–0.3</div>
+    <div class="r2-segment" style="width: 20%; background: #ecc94b;">0.3–0.5 ← tu 0.41</div>
+    <div class="r2-segment" style="width: 20%; background: #68d391;">0.5–0.7</div>
+    <div class="r2-segment" style="width: 20%; background: #4fd1c5;">0.7–1.0</div>
+  </div>
+</div>
+
+<table>
+  <tr><th>R²</th><th>Interpretación</th></tr>
+  <tr><td>1.0</td><td>Predicción perfecta. Imposible en la realidad.</td></tr>
+  <tr><td>0.9 – 1.0</td><td>Excelente, casi sospechoso (revisar fuga de datos).</td></tr>
+  <tr><td>0.7 – 0.9</td><td>Muy bueno.</td></tr>
+  <tr><td>0.5 – 0.7</td><td>Aceptable.</td></tr>
+  <tr><td><strong>0.3 – 0.5</strong></td><td><strong>Modesto pero útil. ← tu caso (0.41)</strong></td></tr>
+  <tr><td>0.0 – 0.3</td><td>Muy débil, apenas mejor que el promedio.</td></tr>
+  <tr><td>0</td><td>El modelo no aporta nada sobre predecir la media.</td></tr>
+  <tr><td>Negativo</td><td>El modelo es peor que predecir la media.</td></tr>
+</table>
+
+<div class="callout">
+  <div class="label">Tu caso</div>
+  <p><strong>R² = 0.41</strong> significa: el modelo explica el 41% de la variación del NDVI. El 59% restante no lo explica (es "ruido" desde la perspectiva de las features que le diste). Es modesto pero no malo: es mejor que predecir siempre el promedio.</p>
+</div>
+</section>
+
+<section id="s3">
+<h2>3. R² vs MAE: por qué importan los dos</h2>
+
+<p><strong>Problema del MAE:</strong> "MAE = 0.13" no te dice si es bueno o malo. Depende de la escala del target. El MAE es un número absoluto — necesita contexto.</p>
+
+<p><strong>Ventaja del R²:</strong> es un número relativo, siempre entre 0 y 1. No depende de la escala. Podés comparar R² de modelos de dominios distintos.</p>
+
+<p>El R² te dice "qué tan bueno es el modelo comparado con no hacer nada (predecir el promedio)". Esa es una medida universal.</p>
+
+<div class="callout tip">
+  <div class="label">Regla práctica</div>
+  <p><strong>MAE</strong> → útil para el negocio (error en unidades reales).<br>
+  <strong>R²</strong> → útil para comparar modelos y saber si aportan algo.<br>
+  <strong>Siempre reportar los dos juntos</strong>, nunca uno solo.</p>
+</div>
+
+<h3>Interpretación gráfica del R²</h3>
+
+<p>En un gráfico de dispersión <strong>valor real vs predicción</strong>:</p>
+<ul>
+  <li><strong>R² = 1</strong> → todos los puntos sobre la diagonal perfecta.</li>
+  <li><strong>R² = 0.9</strong> → puntos muy cerca de la diagonal.</li>
+  <li><strong>R² = 0.41</strong> → nube reconocible alrededor de la diagonal, con dispersión.</li>
+  <li><strong>R² = 0</strong> → nube horizontal (predice siempre el promedio).</li>
+  <li><strong>R² &lt; 0</strong> → puntos sistemáticamente lejos, peor que la media.</li>
+</ul>
+</section>
+
+<section id="s4">
+<h2>4. El "presupuesto" de varianza</h2>
+
+<p>Pensalo como una torta:</p>
+
+<div class="formula">
+Varianza total del NDVI (100%)<br>
+├── Explicada por las features (41%)  ← señal<br>
+└── No explicada (59%)               ← ruido (para este modelo)
+</div>
+
+<div class="highlight-box">
+  <p><strong>El modelo NO puede aumentar la torta de la señal.</strong></p>
+  <p>La torta de señal está limitada por las features que le das. Lo único que puede hacer el modelo es <em>acercarse al máximo posible de esa torta</em>, pero nunca superarlo.</p>
+</div>
+
+<p>Si esa torta de señal es 41%, el mejor modelo del mundo con esas features va a dar R² ≈ 0.41. Optimizar hiperparámetros puede moverte entre 0.38 y 0.43, no mucho más.</p>
+
+<h3>Dos caminos para mejorar el poder predictivo</h3>
+
+<div class="grid">
+  <div class="card">
+    <h4>1. Aumentar la torta de señal</h4>
+    <p>Agregar features que capturen más varianza: datos de suelo, humedad del suelo, historial del lote, NDVI de mayor resolución temporal. <strong>Es el camino con más potencial.</strong></p>
+  </div>
+  <div class="card">
+    <h4>2. Mejorar la captura de la torta existente</h4>
+    <p>Gradient Boosting, mejor feature engineering. <strong>Techo bajo si ya usás un buen algoritmo como Random Forest.</strong></p>
+  </div>
+</div>
+
+<p>Esto explica por qué <strong>más datos es la mejora prioritaria</strong> en tu trabajo.</p>
+</section>
+
+<section id="s5">
+<h2>5. Los dos significados de "varianza" en ML</h2>
+
+<p>Acá hay una ambigüedad que confunde a mucha gente. La palabra "varianza" se usa para dos cosas distintas:</p>
+
+<table>
+  <tr>
+    <th>Significado</th>
+    <th>Qué mide</th>
+    <th>Ejemplo en tu TP</th>
+  </tr>
+  <tr>
+    <td><strong>A — Varianza del target</strong></td>
+    <td>Dispersión del valor a predecir. "Terreno de juego" del modelo.</td>
+    <td>Cuánto varía el NDVI entre todas las mediciones.</td>
+  </tr>
+  <tr>
+    <td><strong>B — Varianza del modelo</strong></td>
+    <td>Cuánto cambia la predicción si entrenás con datos ligeramente distintos. "Ruido" del modelo.</td>
+    <td>Cuánto varía el R² si cambiás la semilla del Random Forest.</td>
+  </tr>
+</table>
+
+<h3>El trade-off sesgo-varianza</h3>
+
+<div class="formula">
+Error total = Sesgo² + Varianza + Ruido irreducible
+</div>
+
+<ul>
+  <li><strong>Sesgo</strong> → qué tan sistemáticamente lejos está el modelo. Modelos simples (regresión lineal) tienen sesgo alto.</li>
+  <li><strong>Varianza del modelo</strong> → qué tan inestable es ante cambios. Modelos complejos (árboles profundos) tienen varianza alta.</li>
+  <li><strong>Ruido irreducible</strong> → el 59% que ningún modelo puede bajar. Es propiedad del dato.</li>
+</ul>
+
+<div class="callout">
+  <div class="label">Conexión con Random Forest</div>
+  <p><strong>100 árboles promediados</strong> → reduce la varianza del modelo (bagging).<br>
+  <strong>Profundidad máx 5</strong> → controla que el modelo no capture ruido de filas individuales.<br>
+  <strong>min_samples_split = 5</strong> → mismo objetivo: evitar memorizar ruido.<br><br>
+  <strong>Random Forest fue inventado para reducir la varianza del modelo sin aumentar mucho el sesgo.</strong> Es ideal para datasets chicos como el tuyo (N=84).</p>
+</div>
+</section>
+
+<section id="s6">
+<h2>6. Por qué N=84 es un problema de varianza</h2>
+
+<p>Con 84 filas, cualquier métrica es ruidosa. Este es el punto crítico para el final.</p>
+
+<div class="callout warn">
+  <div class="label">Ejemplo concreto</div>
+  <p><strong>Recall = 0.50 significa "detecté 1 de 2 cortes".</strong></p>
+  <p>Si un solo corte de test se clasificara distinto → recall = 1.00 o recall = 0.00.<br>
+  <strong>Un cambio de una sola fila mueve la métrica de 0 a 1.</strong></p>
+</div>
+
+<p>Esto NO es que el modelo sea inestable — es que tu muestra de test es tan chica que <strong>la métrica tiene varianza enorme</strong>. La estimación de "recall = 0.50" tiene un intervalo de confianza tan amplio que no sabés si el modelo es bueno o malo.</p>
+
+<p>Por eso en el informe hay que decir <em>"resultados preliminares"</em> — no porque el modelo esté mal, sino porque la varianza de la estimación es tan grande que no permite conclusiones firmes.</p>
+
+<div class="callout tip">
+  <div class="label">Cómo reportar esto correctamente</div>
+  <p>Con <strong>intervalos de confianza</strong> o con <strong>validación cruzada repetida</strong> (múltiples semillas), no con un único split.</p>
+</div>
+</section>
+
+<section id="s7">
+<h2>7. Asociación ≠ causalidad</h2>
+
+<p>El algoritmo <strong>no captura el fenómeno físico</strong>. Lo que hace es encontrar patrones correlacionales en las features y usarlos para reducir el error.</p>
+
+<div class="highlight-box">
+  <p><strong>El modelo captura correlaciones, no causas.</strong></p>
+  <p>"Capturar varianza" = el modelo encontró que cuando <code>dias_desde_ultimo_corte</code> sube, el NDVI también sube (correlación), y usa eso para predecir. <strong>No significa que entienda por qué el NDVI sube después de un corte</strong> (fisiología de la planta).</p>
+</div>
+
+<h3>Ejemplo concreto con tu dataset</h3>
+
+<p>Supongamos que el modelo aprendió: <em>"Cuando <code>dias_desde_ultimo_corte</code> &gt; 40, el NDVI tiende a ser alto."</em></p>
+
+<p><strong>Lo que capturó:</strong> una asociación entre esa feature y el target en tus 84 filas.</p>
+
+<p><strong>Lo que NO capturó:</strong></p>
+<ul>
+  <li>Que la razón biológica es que la alfalfa rebrota después del corte.</li>
+  <li>Que esa relación podría romperse si cambia la variedad de alfalfa.</li>
+  <li>Que en otro lote con otra genética la relación podría ser distinta.</li>
+</ul>
+
+<p>Si mañana cambia el manejo del campo, la correlación puede desaparecer y el modelo falla — sin que el algoritmo "se dé cuenta".</p>
+
+<h3>La jerarquía de lo que un modelo puede hacer</h3>
+
+<table>
+  <tr><th>Nivel</th><th>Qué hace el modelo</th><th>Tu R² = 0.41</th></tr>
+  <tr><td>1. Predecir</td><td>Da un valor para nuevas filas</td><td>✅ Sí, lo hace</td></tr>
+  <tr><td>2. Asociar</td><td>Encuentra patrones correlacionales</td><td>✅ Sí, lo hace</td></tr>
+  <tr><td>3. Explicar</td><td>Identifica qué features aportan más</td><td>✅ Parcialmente</td></tr>
+  <tr><td>4. Entender causalidad</td><td>Sabe por qué esa feature afecta al target</td><td>❌ No, ningún modelo tabular lo hace solo</td></tr>
+  <tr><td>5. Generalizar</td><td>Funciona en otros lotes, campañas, regiones</td><td>❌ No validado con N=84 y 2 lotes</td></tr>
+</table>
+
+<p>Tu modelo está en el nivel 2–3. Es útil para predicción operativa y para hipótesis agronómicas, pero <strong>no prueba causalidad ni generaliza</strong> sin más datos.</p>
+</section>
+
+<section id="s8">
+<h2>8. Tabla resumen: tu TP en clave de varianza</h2>
+
+<table>
+  <tr><th>Paso del TP</th><th>Qué hace en términos de varianza</th></tr>
+  <tr><td>Limpieza (÷10, ÷10000)</td><td>No cambia la varianza relativa — solo reescala.</td></tr>
+  <tr><td>Feature <code>dias_desde_ultimo_corte</code></td><td>Introduce varianza señal que antes no estaba. Captura el ciclo fisiológico.</td></tr>
+  <tr><td>Agregados climáticos 7/14/30d</td><td>Introduce varianza señal. Pero también varianza-ruido si las ventanas no son las relevantes.</td></tr>
+  <tr><td>Random Forest con 100 árboles</td><td>Reduce la <strong>varianza del modelo</strong> (bagging).</td></tr>
+  <tr><td>Profundidad máx 5</td><td>Controla que el modelo no capture varianza-ruido de filas individuales.</td></tr>
+  <tr><td><code>class_weight='balanced'</code></td><td>Compensa la asimetría de varianza entre clases.</td></tr>
+  <tr><td><strong>R² = 0.41</strong></td><td>Dice que el 41% de la varianza del NDVI es señal capturable con estas features.</td></tr>
+  <tr><td><strong>Recall = 0.50 con N=2 positivos</strong></td><td>Dice que la varianza de la estimación es tan grande que el número es casi anecdótico.</td></tr>
+</table>
+</section>
+
+<section id="s9">
+<h2>9. Preguntas frecuentes del final</h2>
+
+<div class="qa-item">
+  <div class="q">¿Qué significa R² = 0.41?</div>
+  <div class="a">Que el modelo reduce el error de predicción en un 41% respecto de la línea base de predecir siempre el promedio. Es una medida de asociación estadística entre features y target, <strong>no de causalidad</strong>. El modelo captura patrones correlacionales, no el mecanismo físico que genera esos patrones.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿0.41 es bueno o malo?</div>
+  <div class="a">Depende del contexto. En términos absolutos es modesto pero mejor que predecir el promedio (R² = 0). Es razonable dado que solo usás clima y días desde el último corte como features. El NDVI también depende de variables no capturadas (suelo, genética, plagas, microclima), que explican el 59% restante. Para mejorar, hay que agregar esas variables, no optimizar más el algoritmo.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿Por qué no usaste MAE solo?</div>
+  <div class="a">Porque el MAE es un número absoluto que depende de la escala del target. R² es relativo y siempre entre 0 y 1, lo que permite comparar con otros modelos y con la línea base de "predecir el promedio". Los dos juntos son más informativos: MAE da el error en unidades reales (0.13 de NDVI), R² da qué tan bueno es el modelo en términos relativos (41% de varianza explicada).</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿Por qué no bajás más el error?</div>
+  <div class="a">Porque el error tiene dos componentes: lo reducible (modelo + features) y lo irreducible (ruido del dato). El 59% de varianza no explicada es ruido desde la perspectiva de las features actuales. La única forma real de bajarlo es agregar features que capturen esa varianza faltante, no optimizar más el algoritmo.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿Por qué usaste profundidad máxima 5 en Random Forest?</div>
+  <div class="a">Para controlar la varianza del modelo. Con N=67 en train, un árbol profundo memorizaría ruido de filas individuales y generalizaría peor. La profundidad limitada fuerza al árbol a capturar solo patrones robustos. Random Forest ya reduce la varianza por bagging, pero el límite de profundidad lo refuerza.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿Qué es el trade-off sesgo-varianza?</div>
+  <div class="a">Es la tensión entre dos fuentes de error: modelos simples tienen sesgo alto (no capturan la complejidad) pero varianza baja (son estables). Modelos complejos tienen sesgo bajo pero varianza alta (son inestables). Random Forest está diseñado para reducir la varianza sin aumentar mucho el sesgo, promediando muchos árboles. Eso lo hace ideal para datasets chicos donde la varianza del modelo es un riesgo real.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿Por qué el recall = 0.50 no es un fracaso del modelo?</div>
+  <div class="a">Porque con solo 2 positivos en test, el recall = 0.50 significa "detecté 1 de 2". La varianza de la estimación es tan grande que un cambio de split lo mueve a 0 o a 1. No es que el modelo sea malo — es que la muestra es tan chica que la métrica no permite conclusiones firmes. La solución es más datos, no más optimización.</div>
+</div>
+
+<div class="qa-item">
+  <div class="q">¿Qué significa que el modelo "captura varianza"?</div>
+  <div class="a">Significa que reduce el error de predicción respecto de la línea base del promedio. NO significa que entienda el fenómeno físico. El algoritmo encuentra asociaciones estadísticas entre features y target, y las usa para predecir. Esa es la distinción clave entre asociación y causalidad: el modelo captura la primera, no la segunda.</div>
+</div>
+</section>
+
+<div class="highlight-box">
+  <p><strong>Frase para llevarte al final:</strong></p>
+  <p><em>"El modelo no captura la realidad, captura un modelo estadístico de la realidad. La varianza explicada es la fracción de la variabilidad del target que ese modelo estadístico logra reproducir — no la fracción del fenómeno que el algoritmo entiende."</em></p>
+</div>
+
+<footer>
+  <p>Guía de estudio — TP NDVI + Clima · Varianza, R² y Poder Predictivo</p>
+</footer>
+
+</div>
+</body>
+</html>

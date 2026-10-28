@@ -39,17 +39,17 @@ const RegisterPage = () => {
     }
 
     try {
-      const res = await api.post('/auth/register', {
+      await api.post('/auth/register', {
         nombre,
         email,
         password,
       });
 
-      const data = res.data;
-
-      // Login automático después del registro
-      login(data.token, data.usuario);
-      navigate('/lotes');
+      // 👇 ACÁ CAMBIAMOS LA LÓGICA 👇
+      // En lugar de loguear automático, mostramos el mensaje y vamos al login
+      alert('¡Registro exitoso! Tu cuenta está activa por 60 días. Por favor, iniciá sesión.');
+      navigate('/login');
+      
     } catch (err: any) {
       setError(err.response?.data?.error || err.message || 'Error al registrar usuario');
     } finally {

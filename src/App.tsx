@@ -21,9 +21,10 @@ const isBot = () => {
   return /bot|whatsapp|facebook|twitter|telegram|linkedin|slack|discord|preview|skype/i.test(navigator.userAgent);
 };
 
-// 👇 2. PROTECTED ROUTE CON "LOADING"
+// 👇 2. PROTECTED ROUTE CON "LOADING" Y CONTROL DE ACCESO
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
+  // 👈 AGREGAMOS 'user' ACÁ PARA PODER LEER EL ESTADO
+  const { isAuthenticated, user, loading } = useAuth();
 
   // Si está cargando, mostramos un cartel para no patear al usuario
   if (loading) {
@@ -38,6 +39,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#064e3b', color: 'white' }}>
         <h1>AlfaTrace - Trazabilidad digital</h1>
+      </div>
+    );
+  }
+
+  // 🛑 FRENO DE MANO PARA USUARIOS PENDIENTES 🛑
+  if (isAuthenticated && user?.estado === 'pendiente') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-green-50 p-4 text-center">
+        <h2 className="text-2xl font-bold text-[#064e3b] mb-2">Cuenta en revisión</h2>
+        <p className="text-gray-600 max-w-md">
+          Tu cuenta está pendiente de aprobación. Por favor, contactate con el administrador de AlfaTrace para que habilite tu acceso.
+        </p>
+        <button 
+          onClick={() => { localStorage.clear(); window.location.href = '/login'; }} 
+          className="mt-6 text-[#0f7a50] underline font-semibold"
+        >
+          Volver al inicio
+        </button>
       </div>
     );
   }
@@ -113,7 +132,7 @@ function App() {
             } />
           </Routes>
           
-                 <CookieBanner />
+          <CookieBanner />
         </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
