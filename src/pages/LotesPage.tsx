@@ -15,7 +15,7 @@ import { LeyendaNDVI } from '../components/common/LeyendaNDVI';
 import { obtenerUltimaDecision } from '../services/decisiones.service';
 import { DecisionCorte } from '../types/DecisionCorte';
 import toast from 'react-hot-toast';
-
+import { SemaforoBadge } from '../components/lotes/SemaforoBadge';
 // =============================================
 // CONFIGURACIÓN DE LEAFLET
 // =============================================
@@ -1025,6 +1025,9 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                           {formatearArea(lote.hectareas)} ha
                           {ndvi !== 'N/A' && <> • NDVI: {ndvi}</>}
                         </span>
+                            
+                        {/* 👇 ACÁ VA EL SEMÁFORO (una sola línea) 👇 */}
+                        <SemaforoBadge loteId={lote.id} />
                       </div>
                     </div>
                     <div className="flex gap-1 flex-shrink-0 ml-1">
