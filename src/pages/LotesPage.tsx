@@ -16,6 +16,7 @@ import { obtenerUltimaDecision } from '../services/decisiones.service';
 import { DecisionCorte } from '../types/DecisionCorte';
 import toast from 'react-hot-toast';
 import { SemaforoBadge } from '../components/lotes/SemaforoBadge';
+import { NdviRadarBadge } from '../components/lotes/NdviRadarBadge';
 // =============================================
 // CONFIGURACIÓN DE LEAFLET
 // =============================================
@@ -1028,6 +1029,7 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
                             
                         {/* 👇 ACÁ VA EL SEMÁFORO (una sola línea) 👇 */}
                         <SemaforoBadge loteId={lote.id} />
+                          <NdviRadarBadge loteId={lote.id} />
                       </div>
                     </div>
                     <div className="flex gap-1 flex-shrink-0 ml-1">
