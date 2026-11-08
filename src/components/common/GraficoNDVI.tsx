@@ -98,13 +98,13 @@ const GraficoNDVI = ({ loteId, loteNombre }: GraficoNDVIProps) => {
         );
     }
 
-    // ✅ Solo Copernicus
+    // 
+        // ✅ Incluimos Copernicus y GEE (Radar)
     const medicionesFiltradas: Medicion[] = mediciones
-        .filter(m => m.fuente === 'copernicus')
+        .filter(m => m.fuente === 'copernicus' || m.fuente === 'gee') // 👈 ACÁ AGREGAMOS GEE
         .filter(m => m.ndvi !== null && m.ndvi !== undefined && !isNaN(m.ndvi))
-        .sort((a, b) =>
-            new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-        );
+        .sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
+    );
 
     if (medicionesFiltradas.length === 0) {
         return (
