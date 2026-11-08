@@ -17,6 +17,7 @@ import { DecisionCorte } from '../types/DecisionCorte';
 import toast from 'react-hot-toast';
 import { SemaforoBadge } from '../components/lotes/SemaforoBadge';
 import { NdviRadarBadge } from '../components/lotes/NdviRadarBadge';
+import api from '../lib/axios';
 // =============================================
 // CONFIGURACIÓN DE LEAFLET
 // =============================================
@@ -414,6 +415,22 @@ const LotesPage = ({ searchQuery = '' }: LotesPageProps) => {
     }
   }, [cargandoCampos, campos.length]);
 
+
+
+    // 🆕 AUTO-TRIGGER: Verificar recolección al entrar o cambiar de campo
+  useEffect(() => {
+    const verificarRecoleccion = async () => {
+      try {
+        console.log('🔍 [AUTO-TRIGGER] Verificando si hay que recolectar datos...');
+        const res = await api.get('/mediciones/verificar-recoleccion');
+        console.log('✅ [AUTO-TRIGGER] Respuesta del Backend:', res.data);
+      } catch (error) {
+        console.error('❌ [AUTO-TRIGGER] Error:', error);
+      }
+    };
+    
+    verificarRecoleccion();
+  }, [campoSeleccionado]);
   // ============================================
   // EFECTO 1: CARGAR LOTES CUANDO CAMBIA EL CAMPO
   // ============================================
