@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mic } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth'; // Ajustá la ruta si es necesario
