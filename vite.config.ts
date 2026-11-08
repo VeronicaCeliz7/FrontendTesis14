@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { VitePWA } from 'vite-plugin-pwa'; // 👈 Agregamos el plugin
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
@@ -15,7 +15,8 @@ export default defineConfig({
         description: 'Trazabilidad digital para tu alfalfa',
         theme_color: '#064e3b',
         background_color: '#ffffff',
-        display: 'standalone', // 👈 Para que se abra como app nativa
+        display: 'standalone',
+        start_url: '/campo', // 👈 ESTA ES LA LÍNEA MÁGICA
         icons: [
           {
             src: '/logo.png',
@@ -36,6 +37,5 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  // 🆕 Permite leer variables con prefijo PUBLIC_ (Vercel no las traduce)
   envPrefix: ['VITE_', 'PUBLIC_'],
 });

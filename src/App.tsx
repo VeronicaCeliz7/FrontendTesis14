@@ -14,6 +14,8 @@ import { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import { CookieBanner } from "./components/common/CookieBanner";
+import CampoPage from './pages/CampoPage';
+import { BotonFlotanteGrabador } from './components/lotes/BotonFlotanteGrabador';
 
 // 👇 1. DETECCIÓN DE BOTS (Para WhatsApp)
 const isBot = () => {
@@ -23,10 +25,8 @@ const isBot = () => {
 
 // 👇 2. PROTECTED ROUTE CON "LOADING" Y CONTROL DE ACCESO
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  // 👈 AGREGAMOS 'user' ACÁ PARA PODER LEER EL ESTADO
   const { isAuthenticated, user, loading } = useAuth();
 
-  // Si está cargando, mostramos un cartel para no patear al usuario
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-green-50 dark:bg-gray-950">
@@ -90,6 +90,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/registro" element={<RegisterPage />} />
             <Route path="/update-password" element={<UpdatePasswordPage />} />
+            <Route path="/campo" element={<CampoPage />} />
             
             <Route path="/" element={
               <ProtectedRoute>
@@ -132,6 +133,8 @@ function App() {
             } />
           </Routes>
           
+          {/* 👇 BOTÓN FLOTANTE Y BANNER 👇 */}
+          <BotonFlotanteGrabador />
           <CookieBanner />
         </ThemeProvider>
       </AuthProvider>

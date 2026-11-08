@@ -35,6 +35,7 @@ import { Badge } from '../components/ui/badge';
 import { Plus, Trash2, Package, Scale } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+
 // =============================================
 // TIPOS
 // =============================================
@@ -316,6 +317,7 @@ const DashboardPage = () => {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+                       
         </div>
     );
 };
