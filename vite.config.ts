@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo.png', 'og-image.jpg'],
+      includeAssets: ['favicon.ico', 'icono-alfa.png', 'og-image.jpg'], // 👈 Cambiado
       manifest: {
         name: 'AlfaTrace',
         short_name: 'AlfaTrace',
@@ -19,14 +19,14 @@ export default defineConfig({
         start_url: '/campo',
         icons: [
           {
-            src: '/logo.png', 
+            src: '/icono-alfa.png', // 👈 Cambiado
             sizes: '192x192',
             type: 'image/png',
             purpose: 'any'
           },
           {
-            src: '/logo.png', 
-            sizes: '512x512', // 👈 Aseguramos el tamaño grande
+            src: '/icono-alfa.png', // 👈 Cambiado
+            sizes: '512x512',
             type: 'image/png',
             purpose: 'any'
           },
