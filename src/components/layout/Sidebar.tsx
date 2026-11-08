@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { Home, Map, Sprout, X } from 'lucide-react';
+import { Home, Map, Sprout, X, Mic } from 'lucide-react'; // 👈 Agregamos Mic acá
 import { cn } from '@/lib/utils';
 import AlfalfaTraceLogo from '@/components/ui/AlfalfaTraceLogo';
 
@@ -7,6 +7,7 @@ const navItems = [
   { path: '/', label: 'Stock y ventas', icon: Home },
   { path: '/labores', label: 'Labores', icon: Sprout },
   { path: '/lotes', label: 'Mis lotes', icon: Map },
+  { path: '/notas', label: 'Mis Notas', icon: Mic }, // 👈 Agregamos esta línea
 ];
 
 interface SidebarProps {
@@ -56,7 +57,7 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
               cn(
                 "flex items-center gap-4 rounded-xl px-5 py-4 text-base font-semibold transition-all duration-200",
                 isActive
-                  ? "bg-[#0f7a50]/10 text-[#064e3b] dark:bg-[#0f7a50]/20 dark:text-[#34d399]" // <-- COLOR DE MARCA
+                  ? "bg-[#0f7a50]/10 text-[#064e3b] dark:bg-[#0f7a50]/20 dark:text-[#34d399]"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground"
               )
             }
@@ -66,7 +67,7 @@ export function Sidebar({ abierto = false, onCerrar }: SidebarProps) {
                 <item.icon
                   className={cn(
                     "h-6 w-6 transition-colors stroke-[2.5]",
-                    isActive ? "text-[#0f7a50] dark:text-[#34d399]" : "text-muted-foreground" // <-- COLOR DE MARCA
+                    isActive ? "text-[#0f7a50] dark:text-[#34d399]" : "text-muted-foreground"
                   )}
                 />
                 <span className="text-base font-semibold">{item.label}</span>

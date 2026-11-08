@@ -16,6 +16,7 @@ import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import { CookieBanner } from "./components/common/CookieBanner";
 import CampoPage from './pages/CampoPage';
 import { BotonFlotanteGrabador } from './components/lotes/BotonFlotanteGrabador';
+import NotasPage from './pages/NotasPage';
 
 // 👇 1. DETECCIÓN DE BOTS (Para WhatsApp)
 const isBot = () => {
@@ -131,9 +132,17 @@ function App() {
                 </Layout>
               </ProtectedRoute>
             } />
+
+            {/* 👇 RUTA DE NOTAS DE VOZ 👇 */}
+            <Route path="/notas" element={
+              <ProtectedRoute>
+                <Layout onSearch={handleSearch}>
+                  <NotasPage />
+                </Layout>
+              </ProtectedRoute>
+            } />
           </Routes>
           
-          {/* 👇 BOTÓN FLOTANTE Y BANNER 👇 */}
           <BotonFlotanteGrabador />
           <CookieBanner />
         </ThemeProvider>
