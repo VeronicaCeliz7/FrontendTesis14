@@ -16,17 +16,19 @@ export default defineConfig({
         theme_color: '#064e3b',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/campo', // 👈 ESTA ES LA LÍNEA MÁGICA
+        start_url: '/campo',
         icons: [
           {
             src: '/logo.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any' // 👈 ESTO HACE QUE EL CELULAR USE EL LOGO
           },
           {
             src: '/logo.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any' // 👈 ESTO HACE QUE EL CELULAR USE EL LOGO
           },
         ],
       },
