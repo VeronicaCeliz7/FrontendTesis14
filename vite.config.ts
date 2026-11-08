@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'logo.png', 'og-image.jpg'],
+      includeAssets: ['favicon.ico', 'icono-app.png', 'og-image.jpg'], // 👈 Cambiado
       manifest: {
         name: 'AlfaTrace',
         short_name: 'AlfaTrace',
@@ -19,16 +19,16 @@ export default defineConfig({
         start_url: '/campo',
         icons: [
           {
-            src: '/logo.png',
+            src: '/icono-app.png', // 👈 Cambiado
             sizes: '192x192',
             type: 'image/png',
-            purpose: 'any' // 👈 ESTO HACE QUE EL CELULAR USE EL LOGO
+            purpose: 'any maskable' // 👈 La magia para Android
           },
           {
-            src: '/logo.png',
+            src: '/icono-app.png', // 👈 Cambiado
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any' // 👈 ESTO HACE QUE EL CELULAR USE EL LOGO
+            purpose: 'any maskable' // 👈 La magia para Android
           },
         ],
       },
