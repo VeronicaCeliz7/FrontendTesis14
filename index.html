@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/logo.png" />
     <title>AlfaTrace | Trazabilidad de alfalfa</title>
-    <link rel="manifest" href="/manifest.json" />
+
+    <!-- 👇 LÓGICA DINÁMICA DEL MANIFIESTO 👇 -->
+    <script>
+      if (window.location.pathname.startsWith('/campo')) {
+        document.write('<link rel="manifest" href="/manifest-campo.json" />');
+      } else {
+        document.write('<link rel="manifest" href="/manifest.json" />');
+      }
+    </script>
 
     <!-- Etiquetas para WhatsApp / Redes -->
     <meta property="og:title" content="AlfaTrace" />

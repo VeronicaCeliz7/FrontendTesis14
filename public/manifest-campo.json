@@ -1,0 +1,21 @@
+{
+  "name": "AlfaTrace Campo",
+  "short_name": "AlfaTrace Campo",
+  "description": "Grabador de notas de voz para el campo",
+  "start_url": "/campo",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#064e3b",
+  "icons": [
+    {
+      "src": "/logo-oficial.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo-oficial.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
